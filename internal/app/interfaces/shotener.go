@@ -29,6 +29,7 @@ func (h *Handler) mainHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		w.WriteHeader(http.StatusTemporaryRedirect)
 		w.Header().Set("Location", res)
+		w.Write([]byte(res))
 	} else {
 		http.Error(w, "Неверный запрос", http.StatusBadRequest)
 	}
