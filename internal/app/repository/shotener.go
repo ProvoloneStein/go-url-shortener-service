@@ -13,22 +13,22 @@ func NewShortenerRepository(store map[string]string) *ShortenerRepository {
 	return &ShortenerRepository{store: store}
 }
 
-func (r *ShortenerRepository) Create(fullUrl string) (string, error) {
-	var shortUrl string
+func (r *ShortenerRepository) Create(fullURL string) (string, error) {
+	var shortURL string
 	for {
-		shortUrl = RandomString()
-		_, ok := r.store[shortUrl]
+		shortURL = RandomString()
+		_, ok := r.store[shortURL]
 		if !ok {
-			r.store[shortUrl] = fullUrl
-			return shortUrl, nil
+			r.store[shortURL] = fullURL
+			return shortURL, nil
 		}
 	}
 }
 
-func (r *ShortenerRepository) GetByShort(shortUrl string) (string, error) {
-	fullUrl, ok := r.store[shortUrl]
+func (r *ShortenerRepository) GetByShort(shortURL string) (string, error) {
+	fullURL, ok := r.store[shortURL]
 	if ok {
-		return fullUrl, nil
+		return fullURL, nil
 	}
 	return "", fmt.Errorf("Ошибочка")
 }

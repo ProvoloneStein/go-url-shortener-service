@@ -10,10 +10,10 @@ func NewShortenerService(repo repository.Shortener) *ShortenerService {
 	return &ShortenerService{repo: repo}
 }
 
-func (s *ShortenerService) CreateShortURL(fullUrl string) (string, error) {
-	return s.repo.Create(fullUrl)
+func (s *ShortenerService) CreateShortURL(fullURL string) (string, error) {
+	return s.repo.Create(fullURL)
 }
 
-func (s *ShortenerService) GetFullByID(shortUrl string) (string, error) {
-	return s.repo.GetByShort(shortUrl)
+func (s *ShortenerService) GetFullByID(shortURL string) (string, error) {
+	return s.repo.GetByShort(shortURL)
 }

@@ -3,8 +3,8 @@ package services
 import "github.com/ProvoloneStein/go-url-shortener-service/internal/app/repository"
 
 type Shortener interface {
-	CreateShortURL(fullUrl string) (string, error)
-	GetFullByID(shortUrl string) (string, error)
+	CreateShortURL(fullURL string) (string, error)
+	GetFullByID(shortURL string) (string, error)
 }
 
 type Service struct {

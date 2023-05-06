@@ -21,8 +21,8 @@ func (h *Handler) mainHandler(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/text")
 		w.Write([]byte(res))
 	} else if r.Method == http.MethodGet {
-		shortUrl := r.URL.Path[1:]
-		res, err := h.services.GetFullByID(shortUrl)
+		shortURL := r.URL.Path[1:]
+		res, err := h.services.GetFullByID(shortURL)
 		if err != nil {
 			http.Error(w, "Неверный запрос", http.StatusBadRequest)
 			return
