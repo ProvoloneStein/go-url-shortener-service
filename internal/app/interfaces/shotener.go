@@ -27,9 +27,8 @@ func (h *Handler) mainHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Неверный запрос", http.StatusBadRequest)
 			return
 		}
-		w.WriteHeader(http.StatusTemporaryRedirect)
 		w.Header().Set("Location", res)
-		w.Write([]byte(res))
+		w.WriteHeader(http.StatusTemporaryRedirect)
 	} else {
 		http.Error(w, "Неверный запрос", http.StatusBadRequest)
 	}
