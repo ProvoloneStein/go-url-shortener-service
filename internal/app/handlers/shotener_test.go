@@ -75,7 +75,8 @@ func TestHandler_mainHandlerPost(t *testing.T) {
 			handlers.mainHandler(w, request)
 			result := w.Result()
 			respBody, _ := io.ReadAll(result.Body)
-
+			defer result.Body.Close()
+			
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
 			assert.Equal(t, tt.want.contentType, result.Header.Get("Content-Type"))
 			assert.Equal(t, tt.want.body, string(respBody))
@@ -141,6 +142,7 @@ func TestHandler_mainHandlerGet(t *testing.T) {
 			handlers.mainHandler(w, request)
 			result := w.Result()
 			respBody, _ := io.ReadAll(result.Body)
+			defer result.Body.Close()
 
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
 			assert.Equal(t, tt.want.contentType, result.Header.Get("Content-Type"))
