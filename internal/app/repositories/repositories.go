@@ -1,4 +1,4 @@
-package repository
+package repositories
 
 type Shortener interface {
 	Create(fullURL string) (string, error)

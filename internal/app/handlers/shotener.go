@@ -1,4 +1,4 @@
-package interfaces
+package handlers
 
 import (
 	"io"
@@ -7,6 +7,11 @@ import (
 
 func (h *Handler) mainHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
+		ct := r.Header.Get("Content-Type")
+		if ct != "text/plain; charset=utf-8" {
+			http.Error(w, "Неверный запрос", http.StatusBadRequest)
+			return
+		}
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			http.Error(w, "Неверный запрос", http.StatusBadRequest)
@@ -17,8 +22,8 @@ func (h *Handler) mainHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Неверный запрос", http.StatusBadRequest)
 			return
 		}
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(http.StatusCreated)
-		w.Header().Set("Content-Type", "application/text")
 		w.Write([]byte(res))
 	} else if r.Method == http.MethodGet {
 		shortURL := r.URL.Path[1:]

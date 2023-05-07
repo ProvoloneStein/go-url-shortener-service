@@ -1,4 +1,4 @@
-package interfaces
+package handlers
 
 import (
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/services"

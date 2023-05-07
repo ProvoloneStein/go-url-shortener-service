@@ -2,15 +2,15 @@ package services
 
 import (
 	"github.com/ProvoloneStein/go-url-shortener-service/configs"
-	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/repository"
+	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/repositories"
 )
 
 type ShortenerService struct {
 	cfg  configs.AppConfig
-	repo repository.Shortener
+	repo repositories.Shortener
 }
 
-func NewShortenerService(cfg configs.AppConfig, repo repository.Shortener) *ShortenerService {
+func NewShortenerService(cfg configs.AppConfig, repo repositories.Shortener) *ShortenerService {
 	return &ShortenerService{cfg: cfg, repo: repo}
 }
 
