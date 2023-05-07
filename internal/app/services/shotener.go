@@ -1,17 +1,26 @@
 package services
 
-import "github.com/ProvoloneStein/go-url-shortener-service/internal/app/repository"
+import (
+	"github.com/ProvoloneStein/go-url-shortener-service/configs"
+	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/repository"
+)
 
 type ShortenerService struct {
+	cfg  configs.AppConfig
 	repo repository.Shortener
 }
 
-func NewShortenerService(repo repository.Shortener) *ShortenerService {
-	return &ShortenerService{repo: repo}
+func NewShortenerService(cfg configs.AppConfig, repo repository.Shortener) *ShortenerService {
+	return &ShortenerService{cfg: cfg, repo: repo}
 }
 
 func (s *ShortenerService) CreateShortURL(fullURL string) (string, error) {
-	return s.repo.Create(fullURL)
+	shortID, err := s.repo.Create(fullURL)
+	if err != nil {
+		return "", err
+	}
+	shortURL := s.cfg.BaseURL + "/" + shortID
+	return shortURL, nil
 }
 
 func (s *ShortenerService) GetFullByID(shortURL string) (string, error) {
