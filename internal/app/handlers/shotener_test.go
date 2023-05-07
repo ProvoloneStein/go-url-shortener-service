@@ -76,7 +76,7 @@ func TestHandler_mainHandlerPost(t *testing.T) {
 			result := w.Result()
 			respBody, _ := io.ReadAll(result.Body)
 			defer result.Body.Close()
-			
+
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
 			assert.Equal(t, tt.want.contentType, result.Header.Get("Content-Type"))
 			assert.Equal(t, tt.want.body, string(respBody))
@@ -114,7 +114,7 @@ func TestHandler_mainHandlerGet(t *testing.T) {
 			},
 		},
 		{
-			name: "Wrong Content Type",
+			name: "Wrong id",
 			id:   "adsga",
 			mockBehavior: func(r *mock_services.MockShortener, shortURL string) {
 				r.EXPECT().GetFullByID(shortURL).Return("", fmt.Errorf("Ошибочка")).AnyTimes()
