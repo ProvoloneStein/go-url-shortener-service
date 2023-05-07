@@ -74,11 +74,11 @@ func TestHandler_mainHandlerPost(t *testing.T) {
 			w := httptest.NewRecorder()
 			handlers.mainHandler(w, request)
 			result := w.Result()
-			resp_body, _ := io.ReadAll(result.Body)
+			respBody, _ := io.ReadAll(result.Body)
 
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
 			assert.Equal(t, tt.want.contentType, result.Header.Get("Content-Type"))
-			assert.Equal(t, tt.want.body, string(resp_body))
+			assert.Equal(t, tt.want.body, string(respBody))
 		})
 	}
 }
@@ -140,11 +140,11 @@ func TestHandler_mainHandlerGet(t *testing.T) {
 			w := httptest.NewRecorder()
 			handlers.mainHandler(w, request)
 			result := w.Result()
-			resp_body, _ := io.ReadAll(result.Body)
+			respBody, _ := io.ReadAll(result.Body)
 
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
 			assert.Equal(t, tt.want.contentType, result.Header.Get("Content-Type"))
-			assert.Equal(t, tt.want.body, string(resp_body))
+			assert.Equal(t, tt.want.body, string(respBody))
 		})
 	}
 }
