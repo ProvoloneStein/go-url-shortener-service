@@ -3,11 +3,12 @@ package handlers
 import (
 	"io"
 	"net/http"
+	"strings"
 )
 
 func (h *Handler) createShortURL(w http.ResponseWriter, r *http.Request) {
 	ct := r.Header.Get("Content-Type")
-	if ct != "text/plain" {
+	if !strings.HasPrefix(ct, "text/plain") {
 		http.Error(w, "Неверный header", http.StatusBadRequest)
 		return
 	}
