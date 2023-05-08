@@ -13,7 +13,7 @@ import (
 	"testing"
 )
 
-func TestHandler_mainHandlerPost(t *testing.T) {
+func TestHandler_createShortURL(t *testing.T) {
 
 	// Init Test Table
 	type mockBehavior func(r *mock_services.MockShortener, fullURL string)
@@ -41,12 +41,12 @@ func TestHandler_mainHandlerPost(t *testing.T) {
 			want: want{
 				contentType: "text/plain; charset=utf-8",
 				statusCode:  400,
-				body:        "Неверный запрос\n",
+				body:        "Неверный header\n",
 			},
 		},
 		{
 			name:        "Good test",
-			contentType: "text/plain; charset=utf-8",
+			contentType: "text/plain",
 			body:        "https://ya.ru",
 			mockBehavior: func(r *mock_services.MockShortener, fullURL string) {
 				r.EXPECT().CreateShortURL(fullURL).Return("1", nil)
@@ -72,7 +72,7 @@ func TestHandler_mainHandlerPost(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tt.body))
 			request.Header.Set("Content-Type", tt.contentType)
 			w := httptest.NewRecorder()
-			handlers.mainHandler(w, request)
+			handlers.createShortURL(w, request)
 			result := w.Result()
 			respBody, _ := io.ReadAll(result.Body)
 			defer result.Body.Close()
@@ -84,7 +84,7 @@ func TestHandler_mainHandlerPost(t *testing.T) {
 	}
 }
 
-func TestHandler_mainHandlerGet(t *testing.T) {
+func TestHandler_getByShort(t *testing.T) {
 
 	// Init Test Table
 	type mockBehavior func(r *mock_services.MockShortener, fullURL string)
@@ -139,7 +139,7 @@ func TestHandler_mainHandlerGet(t *testing.T) {
 			// Create Request
 			request := httptest.NewRequest(http.MethodGet, "/"+tt.id, nil)
 			w := httptest.NewRecorder()
-			handlers.mainHandler(w, request)
+			handlers.getByShort(w, request)
 			result := w.Result()
 			respBody, _ := io.ReadAll(result.Body)
 			defer result.Body.Close()
