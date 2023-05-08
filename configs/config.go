@@ -1,5 +1,7 @@
 package configs
 
+import "flag"
+
 type AppConfig struct {
 	BaseURL string
 	Addr    string
@@ -7,7 +9,8 @@ type AppConfig struct {
 
 func InitConfig() (AppConfig, error) {
 	var Config AppConfig
-	Config.BaseURL = "http://localhost:8080"
-	Config.Addr = "localhost:8080"
+	flag.StringVar(&Config.BaseURL, "b", "http://localhost:8080", "short URL base address")
+	flag.StringVar(&Config.Addr, "a", "localhost:8080", "address and port to run server")
+	flag.Parse()
 	return Config, nil
 }

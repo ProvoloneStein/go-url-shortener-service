@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"io"
 	"net/http"
@@ -52,4 +53,10 @@ func main() {
 	}
 	// и печатаем его
 	fmt.Println(string(body))
+
+	ptr := flag.String("file", "", "input image file")
+	flag.StringVar(ptr, "dest", "./output", "destination folder")
+	flag.StringVar(ptr, "prefix", "cnv_", "prefix for output image file")
+	flag.Parse()
+	print(*ptr)
 }
