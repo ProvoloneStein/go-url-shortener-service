@@ -3,7 +3,6 @@ package configs
 import (
 	"flag"
 	"github.com/caarlos0/env/v8"
-	"log"
 )
 
 type AppConfig struct {
@@ -18,8 +17,5 @@ func InitConfig() (AppConfig, error) {
 	flag.StringVar(&Config.Addr, "a", "localhost:8080", "address and port to run server")
 	flag.Parse()
 	err := env.Parse(&Config)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return Config, nil
+	return Config, err
 }
