@@ -30,7 +30,7 @@ func (r *ShortenerRepository) GetByShort(shortURL string) (string, error) {
 	if ok {
 		return fullURL, nil
 	}
-	return "", fmt.Errorf("Данный адрес недоступен")
+	return "", fmt.Errorf("url not found")
 }
 
 func RandomString() string {
