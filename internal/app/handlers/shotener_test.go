@@ -64,9 +64,9 @@ func TestHandler_createShortURL(t *testing.T) {
 			// Init Dependencies
 			c := gomock.NewController(t)
 			defer c.Finish()
-			services := mock_handlers.NewMockService(c)
-			tt.mockBehavior(services, tt.body)
-			handlers := Handler{services}
+			mockServices := mock_handlers.NewMockService(c)
+			tt.mockBehavior(mockServices, tt.body)
+			handlers := Handler{mockServices}
 
 			// Create Request
 			request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tt.body))
@@ -134,9 +134,9 @@ func TestHandler_getByShort(t *testing.T) {
 			// Init Dependencies
 			c := gomock.NewController(t)
 			defer c.Finish()
-			mock_services := mock_handlers.NewMockService(c)
-			tt.mockBehavior(mock_services, tt.id)
-			handlers := Handler{services: mock_services}
+			mockServices := mock_handlers.NewMockService(c)
+			tt.mockBehavior(mockServices, tt.id)
+			handlers := Handler{services: mockServices}
 
 			// Create Request
 			request := httptest.NewRequest(http.MethodGet, tt.url, nil)
