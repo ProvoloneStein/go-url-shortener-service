@@ -2,6 +2,10 @@ package configs
 
 import (
 	"flag"
+	"fmt"
+)
+
+import (
 	"github.com/caarlos0/env/v8"
 )
 
@@ -11,11 +15,14 @@ type AppConfig struct {
 }
 
 func InitConfig() (AppConfig, error) {
-	var Config AppConfig
+	var config AppConfig
 
-	flag.StringVar(&Config.BaseURL, "b", "http://localhost:8080", "short URL base address")
-	flag.StringVar(&Config.Addr, "a", "localhost:8080", "address and port to run server")
+	flag.StringVar(&config.BaseURL, "b", "http://localhost:8080", "short URL base address")
+	flag.StringVar(&config.Addr, "a", "localhost:8080", "address and port to run server")
 	flag.Parse()
-	err := env.Parse(&Config)
-	return Config, err
+	err := env.Parse(&config)
+	if err != nil {
+		return config, fmt.Errorf("Ошибка при получении переменных окружения: %s", err)
+	}
+	return config, err
 }

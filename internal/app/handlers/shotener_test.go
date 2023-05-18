@@ -1,9 +1,10 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
-	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/services"
-	mock_services "github.com/ProvoloneStein/go-url-shortener-service/internal/app/services/mocks"
+	mock_handlers "github.com/ProvoloneStein/go-url-shortener-service/internal/app/handlers/mocks"
+	"github.com/go-chi/chi/v5"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"io"
@@ -16,7 +17,7 @@ import (
 func TestHandler_createShortURL(t *testing.T) {
 
 	// Init Test Table
-	type mockBehavior func(r *mock_services.MockShortener, fullURL string)
+	type mockBehavior func(r *mock_handlers.MockService, fullURL string)
 
 	type want struct {
 		contentType string
@@ -35,8 +36,8 @@ func TestHandler_createShortURL(t *testing.T) {
 			name:        "Wrong Content Type",
 			contentType: "type",
 			body:        "https://ya.ru",
-			mockBehavior: func(r *mock_services.MockShortener, fullURL string) {
-				r.EXPECT().CreateShortURL(fullURL).Return("123", nil).AnyTimes()
+			mockBehavior: func(r *mock_handlers.MockService, fullURL string) {
+				r.EXPECT().CreateShortURL(fullURL).Return("123", nil).MaxTimes(1)
 			},
 			want: want{
 				contentType: "text/plain; charset=utf-8",
@@ -48,8 +49,8 @@ func TestHandler_createShortURL(t *testing.T) {
 			name:        "Good test",
 			contentType: "text/plain",
 			body:        "https://ya.ru",
-			mockBehavior: func(r *mock_services.MockShortener, fullURL string) {
-				r.EXPECT().CreateShortURL(fullURL).Return("1", nil)
+			mockBehavior: func(r *mock_handlers.MockService, fullURL string) {
+				r.EXPECT().CreateShortURL(fullURL).Return("1", nil).MaxTimes(1)
 			},
 			want: want{
 				contentType: "text/plain; charset=utf-8",
@@ -63,9 +64,8 @@ func TestHandler_createShortURL(t *testing.T) {
 			// Init Dependencies
 			c := gomock.NewController(t)
 			defer c.Finish()
-			repo := mock_services.NewMockShortener(c)
-			tt.mockBehavior(repo, tt.body)
-			services := &services.Service{Shortener: repo}
+			services := mock_handlers.NewMockService(c)
+			tt.mockBehavior(services, tt.body)
 			handlers := Handler{services}
 
 			// Create Request
@@ -74,8 +74,8 @@ func TestHandler_createShortURL(t *testing.T) {
 			w := httptest.NewRecorder()
 			handlers.createShortURL(w, request)
 			result := w.Result()
-			respBody, _ := io.ReadAll(result.Body)
 			defer result.Body.Close()
+			respBody, _ := io.ReadAll(result.Body)
 
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
 			assert.Equal(t, tt.want.contentType, result.Header.Get("Content-Type"))
@@ -87,7 +87,7 @@ func TestHandler_createShortURL(t *testing.T) {
 func TestHandler_getByShort(t *testing.T) {
 
 	// Init Test Table
-	type mockBehavior func(r *mock_services.MockShortener, fullURL string)
+	type mockBehavior func(r *mock_handlers.MockService, fullURL string)
 
 	type want struct {
 		statusCode  int
@@ -99,14 +99,16 @@ func TestHandler_getByShort(t *testing.T) {
 	tests := []struct {
 		name         string
 		id           string
+		url          string
 		mockBehavior mockBehavior
 		want         want
 	}{
 		{
 			name: "Good test",
 			id:   "gwrags",
-			mockBehavior: func(r *mock_services.MockShortener, shortURL string) {
-				r.EXPECT().GetFullByID(shortURL).Return("https://ya.ru", nil)
+			url:  "http://localhost:8080/gwrags",
+			mockBehavior: func(r *mock_handlers.MockService, shortURL string) {
+				r.EXPECT().GetFullByID(shortURL).Return("https://ya.ru", nil).MaxTimes(1)
 			},
 			want: want{
 				statusCode: 307,
@@ -116,8 +118,9 @@ func TestHandler_getByShort(t *testing.T) {
 		{
 			name: "Wrong id",
 			id:   "adsga",
-			mockBehavior: func(r *mock_services.MockShortener, shortURL string) {
-				r.EXPECT().GetFullByID(shortURL).Return("", fmt.Errorf("Ошибочка")).AnyTimes()
+			url:  "http://localhost:8080/adsga",
+			mockBehavior: func(r *mock_handlers.MockService, shortURL string) {
+				r.EXPECT().GetFullByID(shortURL).Return("", fmt.Errorf("Ошибочка")).MaxTimes(1)
 			},
 			want: want{
 				contentType: "text/plain; charset=utf-8",
@@ -131,18 +134,23 @@ func TestHandler_getByShort(t *testing.T) {
 			// Init Dependencies
 			c := gomock.NewController(t)
 			defer c.Finish()
-			repo := mock_services.NewMockShortener(c)
-			tt.mockBehavior(repo, tt.id)
-			services := &services.Service{Shortener: repo}
-			handlers := Handler{services}
+			mock_services := mock_handlers.NewMockService(c)
+			tt.mockBehavior(mock_services, tt.id)
+			handlers := Handler{services: mock_services}
 
 			// Create Request
-			request := httptest.NewRequest(http.MethodGet, "/"+tt.id, nil)
+			request := httptest.NewRequest(http.MethodGet, tt.url, nil)
 			w := httptest.NewRecorder()
+			router := chi.NewRouteContext()
+
+			router.URLParams.Add("id", tt.id)
+
+			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, router))
+
 			handlers.getByShort(w, request)
 			result := w.Result()
-			respBody, _ := io.ReadAll(result.Body)
 			defer result.Body.Close()
+			respBody, _ := io.ReadAll(result.Body)
 
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
 			assert.Equal(t, tt.want.contentType, result.Header.Get("Content-Type"))

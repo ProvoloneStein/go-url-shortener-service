@@ -1,15 +1,20 @@
 package handlers
 
 import (
-	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/services"
 	"github.com/go-chi/chi/v5"
 )
 
-type Handler struct {
-	services *services.Service
+//go:generate mockgen -source=handlers.go -destination=mocks/mock.go
+type Service interface {
+	CreateShortURL(fullURL string) (string, error)
+	GetFullByID(shortURL string) (string, error)
 }
 
-func NewHandler(services *services.Service) *Handler {
+type Handler struct {
+	services Service
+}
+
+func NewHandler(services Service) *Handler {
 	return &Handler{services: services}
 }
 

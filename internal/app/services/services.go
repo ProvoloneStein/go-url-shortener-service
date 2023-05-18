@@ -2,22 +2,35 @@ package services
 
 import (
 	"github.com/ProvoloneStein/go-url-shortener-service/configs"
-	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/repositories"
+	"net/url"
 )
 
-//go:generate mockgen -source=services.go -destination=mocks/mock.go
-
-type Shortener interface {
-	CreateShortURL(fullURL string) (string, error)
-	GetFullByID(shortURL string) (string, error)
+type Repository interface {
+	Create(fullURL string) (string, error)
+	GetByShort(shortURL string) (string, error)
 }
 
 type Service struct {
-	Shortener
+	cfg  configs.AppConfig
+	repo Repository
 }
 
-func NewService(cfg configs.AppConfig, repos *repositories.Repository) *Service {
-	return &Service{
-		Shortener: NewShortenerService(cfg, repos.Shortener),
+func NewService(cfg configs.AppConfig, repo Repository) *Service {
+	return &Service{cfg: cfg, repo: repo}
+}
+
+func (s *Service) CreateShortURL(fullURL string) (string, error) {
+	shortID, err := s.repo.Create(fullURL)
+	if err != nil {
+		return "", err
 	}
+	shortURL, err := url.JoinPath(s.cfg.BaseURL, shortID)
+	if err != nil {
+		return "", err
+	}
+	return shortURL, nil
+}
+
+func (s *Service) GetFullByID(shortURL string) (string, error) {
+	return s.repo.GetByShort(shortURL)
 }
