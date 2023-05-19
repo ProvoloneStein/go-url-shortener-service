@@ -24,7 +24,7 @@ func (h *Handler) createShortURL(w http.ResponseWriter, r *http.Request) {
 	}
 	res, err := h.services.CreateShortURL(string(body))
 	if err != nil {
-		log.Printf("%s\n", err)
+		log.Print(err)
 		http.Error(w, "Неверный запрос", http.StatusBadRequest)
 		return
 	}
@@ -32,7 +32,7 @@ func (h *Handler) createShortURL(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 
 	if _, err = w.Write([]byte(res)); err != nil {
-		return
+		log.Print(err)
 	}
 }
 

@@ -60,6 +60,7 @@ func TestHandler_createShortURL(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			// Init Dependencies
 			c := gomock.NewController(t)
@@ -130,6 +131,7 @@ func TestHandler_getByShort(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			// Init Dependencies
 			c := gomock.NewController(t)

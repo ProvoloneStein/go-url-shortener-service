@@ -15,13 +15,13 @@ func NewRepository() *Repository {
 	}
 }
 
-func (r *Repository) Create(fullURL string) (string, error) {
+func (r *Repository) Create(fullURL string) string {
 	var shortURL string
 	for {
 		shortURL = randomString()
 		if _, ok := r.store[shortURL]; !ok {
 			r.store[shortURL] = fullURL
-			return shortURL, nil
+			return shortURL
 		}
 	}
 }
