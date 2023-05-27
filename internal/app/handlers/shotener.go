@@ -1,8 +1,9 @@
 package handlers
 
 import (
+	"github.com/ProvoloneStein/go-url-shortener-service/internal/logger"
 	"github.com/go-chi/chi/v5"
-	"log"
+	"go.uber.org/zap"
 )
 
 import (
@@ -24,7 +25,7 @@ func (h *Handler) createShortURL(w http.ResponseWriter, r *http.Request) {
 	}
 	res, err := h.services.CreateShortURL(string(body))
 	if err != nil {
-		log.Print(err)
+		logger.Log.Error("ошибка при создании url", zap.Error(err))
 		http.Error(w, "Неверный запрос", http.StatusBadRequest)
 		return
 	}
@@ -32,7 +33,7 @@ func (h *Handler) createShortURL(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 
 	if _, err = w.Write([]byte(res)); err != nil {
-		log.Print(err)
+		logger.Log.Error("ошибка при создании url", zap.Error(err))
 	}
 }
 

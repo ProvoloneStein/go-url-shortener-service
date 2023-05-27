@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/ProvoloneStein/go-url-shortener-service/internal/logger"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -20,6 +21,7 @@ func NewHandler(services Service) *Handler {
 
 func (h *Handler) InitHandler() *chi.Mux {
 	router := chi.NewRouter()
+	router.Use(logger.RequestLogger)
 	router.Post("/", h.createShortURL)
 	router.Get("/{id}", h.getByShort)
 	return router
