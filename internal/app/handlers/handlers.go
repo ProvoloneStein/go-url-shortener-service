@@ -22,6 +22,7 @@ func NewHandler(services Service) *Handler {
 func (h *Handler) InitHandler() *chi.Mux {
 	router := chi.NewRouter()
 	router.Use(logger.RequestLogger)
+	router.Use(gzipHandle)
 	router.Post("/", h.createShortURL)
 	router.Get("/{id}", h.getByShort)
 
