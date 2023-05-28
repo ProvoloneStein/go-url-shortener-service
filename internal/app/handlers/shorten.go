@@ -16,7 +16,7 @@ type requestData struct {
 }
 
 type responseData struct {
-	Result string `json:"result" valid: "url"`
+	Result string `json:"result" valid:"url"`
 }
 
 func (h *Handler) createShortURLByJSON(w http.ResponseWriter, r *http.Request) {
