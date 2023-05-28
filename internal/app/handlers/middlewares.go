@@ -18,6 +18,7 @@ func (w gzipWriter) Write(b []byte) (int, error) {
 
 func gzipHandle(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// TODO если успею, то надо добавить провеку размера ответа (пока не понял как))
 		// проверяем, что входящие данные поддерживаемого формата
 		ct := r.Header.Get("Content-Type")
 		if !strings.HasPrefix(ct, "text/plain") && !strings.HasPrefix(ct, "application/json") {
