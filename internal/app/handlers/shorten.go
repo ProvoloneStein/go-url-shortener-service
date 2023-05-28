@@ -22,7 +22,7 @@ func (h *Handler) createShortURLByJSON(w http.ResponseWriter, r *http.Request) {
 	var requestBody requestData
 
 	ct := r.Header.Get("Content-Type")
-	if !strings.HasPrefix(ct, "application/json") || !strings.HasPrefix(ct, "application/x-gzip") {
+	if !strings.HasPrefix(ct, "application/json") && !strings.HasPrefix(ct, "application/x-gzip") {
 		http.Error(w, "Неверный header", http.StatusBadRequest)
 		return
 	}

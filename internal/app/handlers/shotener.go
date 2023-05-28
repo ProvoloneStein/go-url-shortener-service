@@ -14,7 +14,7 @@ import (
 
 func (h *Handler) createShortURL(w http.ResponseWriter, r *http.Request) {
 	ct := r.Header.Get("Content-Type")
-	if !strings.HasPrefix(ct, "text/plain") || !strings.HasPrefix(ct, "application/x-gzip") {
+	if !strings.HasPrefix(ct, "text/plain") && !strings.HasPrefix(ct, "application/x-gzip") {
 		http.Error(w, "Неверный header", http.StatusBadRequest)
 		return
 	}
