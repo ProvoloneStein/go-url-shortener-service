@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/logger"
 	"github.com/asaskevich/govalidator"
 	"go.uber.org/zap"
@@ -23,7 +22,7 @@ func (h *Handler) createShortURLByJSON(w http.ResponseWriter, r *http.Request) {
 	var requestBody requestData
 
 	ct := r.Header.Get("Content-Type")
-	if !strings.HasPrefix(ct, "application/json") {
+	if !strings.HasPrefix(ct, "application/json") || !strings.HasPrefix(ct, "application/x-gzip") {
 		http.Error(w, "Неверный header", http.StatusBadRequest)
 		return
 	}
@@ -33,7 +32,6 @@ func (h *Handler) createShortURLByJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := json.Unmarshal(body, &requestBody); err != nil {
-		fmt.Println(err)
 		http.Error(w, "Неверный запрос", http.StatusBadRequest)
 		return
 	}
