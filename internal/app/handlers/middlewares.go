@@ -16,7 +16,8 @@ func (w gzipWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
 
-func gzipHandle(next http.Handler) http.Handler {
+func gzipWriterHandler(next http.Handler) http.Handler {
+	// сжимаем gzip
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// TODO если успею, то надо добавить провеку размера ответа (пока не понял как))
 		// проверяем, что входящие данные поддерживаемого формата
@@ -40,6 +41,32 @@ func gzipHandle(next http.Handler) http.Handler {
 					// передаём обработчику страницы переменную типа gzipWriter для вывода данных
 					next.ServeHTTP(gzipWriter{ResponseWriter: w, Writer: gz}, r)
 					return
+				}
+			}
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func gzipReaderHandler(next http.Handler) http.Handler {
+	// распаковываем gzip тело
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+	head:
+		// проверяем, что клиент отправил серверу сжатые данные в формате gzip
+		for _, array := range r.Header.Values("Content-Encoding") {
+			for _, value := range strings.Split(array, ", ") {
+				if strings.Contains(value, "gzip") {
+					cr, err := gzip.NewReader(r.Body)
+					if err != nil {
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+					// меняем тело запроса на новое
+					r.Body = cr
+					defer cr.Close()
+					//избегаем повторения операции
+					break head
 				}
 			}
 		}
