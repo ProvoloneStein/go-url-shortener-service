@@ -24,6 +24,9 @@ func (h *Handler) InitHandler() *chi.Mux {
 	router.Use(logger.RequestLogger)
 	router.Post("/", h.createShortURL)
 	router.Get("/{id}", h.getByShort)
-	router.Post("/shorten", h.createShortURLByJSON)
+
+	router.Route("/api", func(r chi.Router) {
+		r.Post("/shorten", h.createShortURLByJSON)
+	})
 	return router
 }
