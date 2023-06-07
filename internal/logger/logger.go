@@ -1,28 +1,26 @@
 package logger
 
 import (
+	"fmt"
 	"go.uber.org/zap"
 )
 
-var Log *zap.Logger = zap.NewNop()
-
 // Initialize инициализирует синглтон логера с необходимым уровнем логирования.
-func Initialize(level string) error {
+func Initialize(level string) (*zap.Logger, error) {
+	var zl *zap.Logger
 	// преобразуем текстовый уровень логирования в zap.AtomicLevel
 	lvl, err := zap.ParseAtomicLevel(level)
 	if err != nil {
-		return err
+		return zl, fmt.Errorf("Ошибка при иницизилации логгера: %s", err)
 	}
 	// создаём новую конфигурацию логера
 	cfg := zap.NewProductionConfig()
 	// устанавливаем уровень
 	cfg.Level = lvl
 	// создаём логер на основе конфигурации
-	zl, err := cfg.Build()
+	zl, err = cfg.Build()
 	if err != nil {
-		return err
+		return zl, fmt.Errorf("Ошибка при иницизилации логгера: %s", err)
 	}
-	// устанавливаем синглтон
-	Log = zl
-	return nil
+	return zl, nil
 }

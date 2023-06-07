@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
-	"github.com/ProvoloneStein/go-url-shortener-service/internal/logger"
+	"fmt"
 	"github.com/asaskevich/govalidator"
 	"go.uber.org/zap"
 	"io"
@@ -28,7 +28,7 @@ func (h *Handler) createShortURLByJSON(w http.ResponseWriter, r *http.Request) {
 	}
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, "Неверный запрос", http.StatusBadRequest)
+		http.Error(w, "Ошибка при чтении тела запроса", http.StatusBadRequest)
 		return
 	}
 	if err := json.Unmarshal(body, &requestBody); err != nil {
@@ -41,13 +41,14 @@ func (h *Handler) createShortURLByJSON(w http.ResponseWriter, r *http.Request) {
 	}
 	res, err := h.services.CreateShortURL(requestBody.URL)
 	if err != nil {
-		logger.Log.Error("ошибка при создании url", zap.Error(err))
+		h.logger.Error("ошибка при создании url", zap.Error(err))
 		http.Error(w, "Неверный запрос", http.StatusBadRequest)
 		return
 	}
+	fmt.Println(res)
 	b, err := json.Marshal(&responseData{Result: res})
 	if err != nil {
-		logger.Log.Error("ошибка при сериализации url", zap.Error(err))
+		h.logger.Error("ошибка при сериализации url", zap.Error(err))
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
@@ -55,6 +56,6 @@ func (h *Handler) createShortURLByJSON(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 
 	if _, err = w.Write(b); err != nil {
-		logger.Log.Error("ошибка при создании url", zap.Error(err))
+		h.logger.Error("ошибка при создании url", zap.Error(err))
 	}
 }

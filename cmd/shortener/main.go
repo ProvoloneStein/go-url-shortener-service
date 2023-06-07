@@ -22,7 +22,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err := logger.Initialize("info"); err != nil {
+	logger, err := logger.Initialize("info")
+	if err != nil {
 		log.Fatal(err)
 	}
 	if config.FileStorage == "" {
@@ -30,15 +31,15 @@ func main() {
 	} else {
 		file, err := os.OpenFile(config.FileStorage, os.O_CREATE|os.O_RDWR, 0666)
 		if err != nil {
-			logger.Log.Fatal("ошибка при попытке открытия файла", zap.Error(err))
+			logger.Fatal("ошибка при попытке открытия файла", zap.Error(err))
 		}
 		defer file.Close()
-		repos = repositories.NewFileRepository(file)
+		repos = repositories.NewFileRepository(logger, file)
 	}
 	services := services.NewService(config, repos)
-	handler := handlers.NewHandler(services)
-	logger.Log.Info(fmt.Sprintf("запускается сервер по адресу %s", config.Addr))
+	handler := handlers.NewHandler(logger, services)
+	logger.Info(fmt.Sprintf("запускается сервер по адресу %s", config.Addr))
 	if err = server.Run(config.Addr, handler.InitHandler()); err != nil {
-		logger.Log.Fatal("ошибка при запуске сервера", zap.Error(err))
+		logger.Fatal("ошибка при запуске сервера", zap.Error(err))
 	}
 }

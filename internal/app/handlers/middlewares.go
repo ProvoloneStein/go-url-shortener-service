@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"compress/gzip"
+	"go.uber.org/zap"
 	"io"
 	"net/http"
 	"strings"
@@ -16,54 +17,51 @@ func (w gzipWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
 
-func gzipWriterHandler(next http.Handler) http.Handler {
-	// сжимаем gzip
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// TODO если успею, то надо добавить провеку размера ответа (пока не понял как))
-		// проверяем, что клиент поддерживает gzip-сжатие
-		for _, array := range r.Header.Values("Accept-Encoding") {
-			for _, value := range strings.Split(array, ", ") {
-				if strings.Contains(value, "gzip") {
-					// TODO подумать как использовать gzip.Reset
-					gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
-					if err != nil {
-						io.WriteString(w, err.Error())
-						return
+func gzipReadWriterHandler(logger *zap.Logger) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			wr := w
+			// TODO если успею, то надо добавить провеку размера ответа (пока не понял как))
+			// проверяем, что клиент поддерживает gzip-сжатие
+		writer:
+			for _, array := range r.Header.Values("Accept-Encoding") {
+				for _, value := range strings.Split(array, ", ") {
+					if strings.Contains(value, "gzip") {
+						// TODO подумать как использовать gzip.Reset
+						gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
+						if err != nil {
+							logger.Error("ошибка при иницилизации gzip логгера", zap.Error(err))
+							w.WriteHeader(http.StatusInternalServerError)
+							return
+						}
+						defer gz.Close()
+						w.Header().Set("Content-Encoding", "gzip")
+						// переопределяем writer
+						wr = gzipWriter{ResponseWriter: w, Writer: gz}
+						break writer
 					}
-					defer gz.Close()
-					w.Header().Set("Content-Encoding", "gzip")
-					// передаём обработчику страницы переменную типа gzipWriter для вывода данных
-					next.ServeHTTP(gzipWriter{ResponseWriter: w, Writer: gz}, r)
-					return
 				}
 			}
-		}
-		next.ServeHTTP(w, r)
-	})
-}
-
-func gzipReaderHandler(next http.Handler) http.Handler {
-	// распаковываем gzip тело
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-	head:
-		// проверяем, что клиент отправил серверу сжатые данные в формате gzip
-		for _, array := range r.Header.Values("Content-Encoding") {
-			for _, value := range strings.Split(array, ", ") {
-				if strings.Contains(value, "gzip") {
-					cr, err := gzip.NewReader(r.Body)
-					if err != nil {
-						w.WriteHeader(http.StatusInternalServerError)
-						return
+		reader:
+			// проверяем, что клиент отправил серверу сжатые данные в формате gzip
+			for _, array := range r.Header.Values("Content-Encoding") {
+				for _, value := range strings.Split(array, ", ") {
+					if strings.Contains(value, "gzip") {
+						cr, err := gzip.NewReader(r.Body)
+						if err != nil {
+							logger.Error("ошибка при сжатии ответа", zap.Error(err))
+							w.WriteHeader(http.StatusInternalServerError)
+							return
+						}
+						// меняем тело запроса на новое
+						r.Body = cr
+						defer cr.Close()
+						//избегаем повторения операции
+						break reader
 					}
-					// меняем тело запроса на новое
-					r.Body = cr
-					defer cr.Close()
-					//избегаем повторения операции
-					break head
 				}
 			}
-		}
-		next.ServeHTTP(w, r)
-	})
+			next.ServeHTTP(wr, r)
+		})
+	}
 }
