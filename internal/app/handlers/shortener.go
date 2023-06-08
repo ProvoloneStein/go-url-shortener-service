@@ -33,6 +33,7 @@ func (h *Handler) createShortURL(w http.ResponseWriter, r *http.Request) {
 
 	if _, err = w.Write([]byte(res)); err != nil {
 		h.logger.Error("ошибка при создании url", zap.Error(err))
+		return
 	}
 }
 

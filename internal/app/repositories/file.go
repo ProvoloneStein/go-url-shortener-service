@@ -47,7 +47,7 @@ func NewFileRepository(logger *zap.Logger, file *os.File) *FileRepository {
 		repo.store[record.ShortURL] = record.OriginalURL
 		repo.uuid, err = strconv.Atoi(record.UUID)
 		if err != nil {
-			logger.Error("Ошибка при получения uuid записи", zap.Error(err))
+			logger.Fatal("Ошибка при получения uuid записи", zap.Error(err))
 		}
 	}
 	repo.uuid += 1
@@ -57,12 +57,11 @@ func NewFileRepository(logger *zap.Logger, file *os.File) *FileRepository {
 func (r *FileRepository) ReadString() (*ShorterRecord, error) {
 	// читаем данные до символа переноса строки
 	data, err := r.reader.ReadBytes('\n')
-	switch {
-	case err == io.EOF:
+	if err == io.EOF {
 		return nil, nil
-	case err != nil:
+	} else if err != nil {
 		return nil, err
-	default:
+	} else {
 		// преобразуем данные из JSON-представления в структуру
 		record := ShorterRecord{}
 		err = json.Unmarshal(data, &record)

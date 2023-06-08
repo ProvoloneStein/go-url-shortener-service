@@ -35,7 +35,6 @@ func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 // RequestLogger — middleware-логер для входящих HTTP-запросов.
 func RequestLogger(logger *zap.Logger) func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
-		start := time.Now()
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			respData := &responseData{
 				status: 0,
@@ -45,6 +44,7 @@ func RequestLogger(logger *zap.Logger) func(http.Handler) http.Handler {
 				ResponseWriter: w, // встраиваем оригинальный http.ResponseWriter
 				responseData:   respData,
 			}
+			start := time.Now()
 			h.ServeHTTP(&lw, r)
 			duration := time.Since(start)
 			logger.Info("got incoming HTTP request",

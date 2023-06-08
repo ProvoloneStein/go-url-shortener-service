@@ -47,7 +47,7 @@ func (h *Handler) createShortURLByJSON(w http.ResponseWriter, r *http.Request) {
 	b, err := json.Marshal(&responseData{Result: res})
 	if err != nil {
 		h.logger.Error("ошибка при сериализации url", zap.Error(err))
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
