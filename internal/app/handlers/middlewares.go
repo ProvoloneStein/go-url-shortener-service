@@ -41,7 +41,8 @@ func gzipReadWriterHandler(logger *zap.Logger) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// TODO если успею, то надо добавить провеку размера ответа (пока не понял как))
 			// переопределяем writer, если клиента поддерживает gzip-сжатие
-			writer := w
+			wr := w
+		writer:
 			for _, array := range r.Header.Values("Accept-Encoding") {
 				for _, value := range strings.Split(array, ", ") {
 					if strings.Contains(value, "gzip") {
@@ -53,8 +54,8 @@ func gzipReadWriterHandler(logger *zap.Logger) func(http.Handler) http.Handler {
 						}
 						defer gz.Close()
 						w.Header().Set("Content-Encoding", "gzip")
-						writer = gzipWriter{ResponseWriter: w, Writer: gz}
-						break
+						wr = gzipWriter{ResponseWriter: w, Writer: gz}
+						break writer
 					}
 				}
 			}
@@ -64,7 +65,7 @@ func gzipReadWriterHandler(logger *zap.Logger) func(http.Handler) http.Handler {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-			next.ServeHTTP(writer, r)
+			next.ServeHTTP(wr, r)
 		})
 	}
 }
