@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/asaskevich/govalidator"
 	"go.uber.org/zap"
 	"io"
@@ -45,7 +44,6 @@ func (h *Handler) createShortURLByJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Неверный запрос", http.StatusBadRequest)
 		return
 	}
-	fmt.Println(res)
 	b, err := json.Marshal(&responseData{Result: res})
 	if err != nil {
 		h.logger.Error("ошибка при сериализации url", zap.Error(err))
