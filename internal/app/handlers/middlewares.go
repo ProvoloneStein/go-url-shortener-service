@@ -17,24 +17,6 @@ func (w gzipWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
 
-func newGzipWriter(w http.ResponseWriter, r *http.Request) (http.ResponseWriter, error) {
-	for _, array := range r.Header.Values("Accept-Encoding") {
-		for _, value := range strings.Split(array, ", ") {
-			if strings.Contains(value, "gzip") {
-				// TODO подумать как использовать gzip.Reset
-				gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
-				if err != nil {
-					return w, err
-				}
-				defer gz.Close()
-				w.Header().Set("Content-Encoding", "gzip")
-				return gzipWriter{ResponseWriter: w, Writer: gz}, nil
-			}
-		}
-	}
-	return w, nil
-}
-
 func gzipRead(r *http.Request) error {
 	for _, array := range r.Header.Values("Content-Encoding") {
 		for _, value := range strings.Split(array, ", ") {
@@ -59,14 +41,30 @@ func gzipReadWriterHandler(logger *zap.Logger) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// TODO если успею, то надо добавить провеку размера ответа (пока не понял как))
 			// переопределяем writer, если клиента поддерживает gzip-сжатие
-			wr, err := newGzipWriter(w, r)
-			if err != nil {
-				logger.Error("ошибка при иницилизации gzip логгера", zap.Error(err))
-				w.WriteHeader(http.StatusInternalServerError)
+			writer := w
+			for _, array := range r.Header.Values("Accept-Encoding") {
+				for _, value := range strings.Split(array, ", ") {
+					if strings.Contains(value, "gzip") {
+						// TODO подумать как использовать gzip.Reset
+						gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
+						if err != nil {
+							logger.Error("ошибка при иницилизации gzip логгера", zap.Error(err))
+							w.WriteHeader(http.StatusInternalServerError)
+						}
+						defer gz.Close()
+						w.Header().Set("Content-Encoding", "gzip")
+						writer = gzipWriter{ResponseWriter: w, Writer: gz}
+						break
+					}
+				}
 			}
 			// меняем тело запроса, если оно сжато
-			gzipRead(r)
-			next.ServeHTTP(wr, r)
+			if err := gzipRead(r); err != nil {
+				logger.Error("ошибка при сжатии ответа", zap.Error(err))
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			next.ServeHTTP(writer, r)
 		})
 	}
 }
