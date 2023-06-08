@@ -36,28 +36,32 @@ func gzipRead(r *http.Request) error {
 	return nil
 }
 
+func needGzipWriter(r *http.Request) bool {
+	for _, array := range r.Header.Values("Accept-Encoding") {
+		for _, value := range strings.Split(array, ", ") {
+			if strings.Contains(value, "gzip") {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func gzipReadWriterHandler(logger *zap.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// TODO если успею, то надо добавить провеку размера ответа (пока не понял как))
 			// переопределяем writer, если клиента поддерживает gzip-сжатие
 			wr := w
-		writer:
-			for _, array := range r.Header.Values("Accept-Encoding") {
-				for _, value := range strings.Split(array, ", ") {
-					if strings.Contains(value, "gzip") {
-						// TODO подумать как использовать gzip.Reset
-						gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
-						if err != nil {
-							logger.Error("ошибка при иницилизации gzip логгера", zap.Error(err))
-							w.WriteHeader(http.StatusInternalServerError)
-						}
-						defer gz.Close()
-						w.Header().Set("Content-Encoding", "gzip")
-						wr = gzipWriter{ResponseWriter: w, Writer: gz}
-						break writer
-					}
+			if needGzipWriter(r) {
+				gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
+				if err != nil {
+					logger.Error("ошибка при иницилизации gzip логгера", zap.Error(err))
+					w.WriteHeader(http.StatusInternalServerError)
 				}
+				defer gz.Close()
+				w.Header().Set("Content-Encoding", "gzip")
+				wr = gzipWriter{ResponseWriter: w, Writer: gz}
 			}
 			// меняем тело запроса, если оно сжато
 			if err := gzipRead(r); err != nil {
