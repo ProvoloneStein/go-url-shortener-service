@@ -6,7 +6,7 @@ import (
 )
 
 type Repository interface {
-	Create(fullURL string) string
+	Create(fullURL string) (string, error)
 	GetByShort(shortURL string) (string, error)
 }
 
@@ -20,7 +20,10 @@ func NewService(cfg configs.AppConfig, repo Repository) *Service {
 }
 
 func (s *Service) CreateShortURL(fullURL string) (string, error) {
-	shortID := s.repo.Create(fullURL)
+	shortID, err := s.repo.Create(fullURL)
+	if err != nil {
+		return "", err
+	}
 	shortURL, err := url.JoinPath(s.cfg.BaseURL, shortID)
 	if err != nil {
 		return "", err

@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"github.com/go-chi/chi/v5"
-	"log"
+	"go.uber.org/zap"
 )
 
 import (
@@ -13,18 +13,18 @@ import (
 
 func (h *Handler) createShortURL(w http.ResponseWriter, r *http.Request) {
 	ct := r.Header.Get("Content-Type")
-	if !strings.HasPrefix(ct, "text/plain") {
+	if !strings.HasPrefix(ct, "text/plain") && !strings.HasPrefix(ct, "application/x-gzip") {
 		http.Error(w, "Неверный header", http.StatusBadRequest)
 		return
 	}
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, "Неверный запрос", http.StatusBadRequest)
+		http.Error(w, "Ошибка при чтении тела запроса", http.StatusBadRequest)
 		return
 	}
 	res, err := h.services.CreateShortURL(string(body))
 	if err != nil {
-		log.Print(err)
+		h.logger.Error("ошибка при создании url", zap.Error(err))
 		http.Error(w, "Неверный запрос", http.StatusBadRequest)
 		return
 	}
@@ -32,7 +32,8 @@ func (h *Handler) createShortURL(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 
 	if _, err = w.Write([]byte(res)); err != nil {
-		log.Print(err)
+		h.logger.Error("ошибка при создании url", zap.Error(err))
+		return
 	}
 }
 

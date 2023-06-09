@@ -7,6 +7,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -67,7 +68,7 @@ func TestHandler_createShortURL(t *testing.T) {
 			defer c.Finish()
 			mockServices := mock_handlers.NewMockService(c)
 			tt.mockBehavior(mockServices, tt.body)
-			handlers := Handler{mockServices}
+			handlers := Handler{logger: zap.NewNop(), services: mockServices}
 
 			// Create Request
 			request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tt.body))
@@ -138,7 +139,7 @@ func TestHandler_getByShort(t *testing.T) {
 			defer c.Finish()
 			mockServices := mock_handlers.NewMockService(c)
 			tt.mockBehavior(mockServices, tt.id)
-			handlers := Handler{services: mockServices}
+			handlers := Handler{logger: zap.NewNop(), services: mockServices}
 
 			// Create Request
 			request := httptest.NewRequest(http.MethodGet, tt.url, nil)
