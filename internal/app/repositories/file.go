@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"go.uber.org/zap"
 	"io"
 	"os"
@@ -25,7 +26,7 @@ type FileRepository struct {
 	uuid   int
 }
 
-func NewFileRepository(logger *zap.Logger, file *os.File) *FileRepository {
+func NewFileRepository(logger *zap.Logger, file *os.File) (*FileRepository, error) {
 
 	repo := FileRepository{
 		logger: logger,
@@ -39,7 +40,7 @@ func NewFileRepository(logger *zap.Logger, file *os.File) *FileRepository {
 	for {
 		record, err := repo.ReadString()
 		if err != nil {
-			logger.Error("Ошибка при попытке иницилизации репозитория", zap.Error(err))
+			return nil, err
 		}
 		if record == nil {
 			break
@@ -47,11 +48,11 @@ func NewFileRepository(logger *zap.Logger, file *os.File) *FileRepository {
 		repo.store[record.ShortURL] = record.OriginalURL
 		repo.uuid, err = strconv.Atoi(record.UUID)
 		if err != nil {
-			logger.Fatal("Ошибка при получения uuid записи", zap.Error(err))
+			return nil, fmt.Errorf("ошибка при получения uuid записи: %s", err)
 		}
 	}
 	repo.uuid += 1
-	return &repo
+	return &repo, nil
 }
 
 func (r *FileRepository) ReadString() (*ShorterRecord, error) {
@@ -61,15 +62,14 @@ func (r *FileRepository) ReadString() (*ShorterRecord, error) {
 		return nil, nil
 	} else if err != nil {
 		return nil, err
-	} else {
-		// преобразуем данные из JSON-представления в структуру
-		record := ShorterRecord{}
-		err = json.Unmarshal(data, &record)
-		if err != nil {
-			return nil, err
-		}
-		return &record, nil
 	}
+	// преобразуем данные из JSON-представления в структуру
+	record := ShorterRecord{}
+	err = json.Unmarshal(data, &record)
+	if err != nil {
+		return nil, err
+	}
+	return &record, nil
 }
 
 func (r *FileRepository) WriteString(record ShorterRecord) error {

@@ -34,7 +34,10 @@ func main() {
 			logger.Fatal("ошибка при попытке открытия файла", zap.Error(err))
 		}
 		defer file.Close()
-		repos = repositories.NewFileRepository(logger, file)
+		repos, err = repositories.NewFileRepository(logger, file)
+		if err != nil {
+			logger.Fatal("ошибка при иницилизации репозитория.", zap.Error(err))
+		}
 	}
 	services := services.NewService(config, repos)
 	handler := handlers.NewHandler(logger, services)
