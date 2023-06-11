@@ -1,17 +1,17 @@
 package repositories
 
 import (
+	"database/sql"
 	"errors"
 	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/jmoiron/sqlx"
 )
 
 type PostgresRepository struct {
-	db *sqlx.DB
+	db *sql.DB
 }
 
 func NewPostgresRepository(dsnString string) (*PostgresRepository, error) {
-	db, err := sqlx.Open("pgx", dsnString)
+	db, err := sql.Open("pgx", dsnString)
 	if err != nil {
 		return nil, err
 	}
