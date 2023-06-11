@@ -77,10 +77,6 @@ func (h *Handler) batchCreateURLByJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Неверный запрос", http.StatusBadRequest)
 		return
 	}
-	if _, err := govalidator.ValidateStruct(requestBody); err != nil {
-		http.Error(w, "Неверое тело запроса", http.StatusBadRequest)
-		return
-	}
 	res, err := h.services.BatchCreate(requestBody)
 	if err != nil {
 		h.logger.Error("ошибка при создании urls", zap.Error(err))
