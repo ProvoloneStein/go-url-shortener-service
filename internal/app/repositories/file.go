@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ProvoloneStein/go-url-shortener-service/configs"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
 	"go.uber.org/zap"
 	"io"
@@ -19,6 +20,7 @@ type ShorterRecord struct {
 }
 
 type FileRepository struct {
+	cfg    configs.AppConfig
 	logger *zap.Logger
 	file   *os.File
 	writer *bufio.Writer
@@ -27,9 +29,10 @@ type FileRepository struct {
 	uuid   int
 }
 
-func NewFileRepository(logger *zap.Logger, file *os.File) (*FileRepository, error) {
+func NewFileRepository(cfg configs.AppConfig, logger *zap.Logger, file *os.File) (*FileRepository, error) {
 
 	repo := FileRepository{
+		cfg:    cfg,
 		logger: logger,
 		file:   file,
 		store:  make(map[string]string),

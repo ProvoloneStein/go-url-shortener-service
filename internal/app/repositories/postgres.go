@@ -2,12 +2,15 @@ package repositories
 
 import (
 	"database/sql"
+	"github.com/ProvoloneStein/go-url-shortener-service/configs"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"net/url"
 )
 
 type PostgresRepository struct {
-	db *sql.DB
+	cfg configs.AppConfig
+	db  *sql.DB
 }
 
 func initPG(db *sql.DB) error {
@@ -31,11 +34,11 @@ func ConntectPG(dsnString string) (*sql.DB, error) {
 	return db, nil
 }
 
-func NewPostgresRepository(db *sql.DB) (*PostgresRepository, error) {
+func NewPostgresRepository(cfg configs.AppConfig, db *sql.DB) (*PostgresRepository, error) {
 	if err := initPG(db); err != nil {
 		return nil, err
 	}
-	return &PostgresRepository{db}, nil
+	return &PostgresRepository{cfg, db}, nil
 }
 
 func (r *PostgresRepository) Create(fullURL string) (string, error) {
@@ -72,7 +75,10 @@ func (r *PostgresRepository) BatchCreate(data []models.BatchCreateRequest) ([]mo
 			if err != nil {
 				if err == sql.ErrNoRows {
 					if _, err := tx.Exec("INSERT INTO shortener (url, shorten) VALUES($1, $2)", val.URL, shortURL); err == nil {
-						response = append(response, models.BatchCreateResponse{URL: shortURL, UUID: val.UUID})
+						resShortURL, err := url.JoinPath(r.cfg.BaseURL, shortURL)
+						if err == nil {
+							response = append(response, models.BatchCreateResponse{URL: resShortURL, UUID: val.UUID})
+						}
 					}
 				}
 				break
