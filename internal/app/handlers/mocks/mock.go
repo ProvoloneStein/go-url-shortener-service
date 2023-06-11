@@ -7,6 +7,7 @@ package mock_handlers
 import (
 	reflect "reflect"
 
+	models "github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -31,6 +32,21 @@ func NewMockService(ctrl *gomock.Controller) *MockService {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockService) EXPECT() *MockServiceMockRecorder {
 	return m.recorder
+}
+
+// BatchCreate mocks base method.
+func (m *MockService) BatchCreate(data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BatchCreate", data)
+	ret0, _ := ret[0].([]models.BatchCreateResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// BatchCreate indicates an expected call of BatchCreate.
+func (mr *MockServiceMockRecorder) BatchCreate(data interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BatchCreate", reflect.TypeOf((*MockService)(nil).BatchCreate), data)
 }
 
 // CreateShortURL mocks base method.
