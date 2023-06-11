@@ -59,6 +59,10 @@ func (r *PostgresRepository) BatchCreate(data []models.BatchCreateRequest) ([]mo
 	var response []models.BatchCreateResponse
 	tx, err := r.db.Begin()
 
+	if err != nil {
+		return nil, err
+	}
+
 	for _, val := range data {
 		for {
 			shortURL := randomString()
