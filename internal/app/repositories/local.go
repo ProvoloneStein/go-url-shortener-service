@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"errors"
+	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
 )
 
 type LocalRepository struct {
@@ -23,6 +24,18 @@ func (r *LocalRepository) Create(fullURL string) (string, error) {
 			return shortURL, nil
 		}
 	}
+}
+
+func (r *LocalRepository) BatchCreate(data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
+	var response []models.BatchCreateResponse
+
+	for _, val := range data {
+		shortURL, err := r.Create(val.URL)
+		if err == nil {
+			response = append(response, models.BatchCreateResponse{URL: shortURL, UUID: val.UUID})
+		}
+	}
+	return response, nil
 }
 
 func (r *LocalRepository) GetByShort(shortURL string) (string, error) {

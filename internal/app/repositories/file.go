@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
 	"go.uber.org/zap"
 	"io"
 	"os"
@@ -107,6 +108,18 @@ func (r *FileRepository) Create(fullURL string) (string, error) {
 			return shortURL, nil
 		}
 	}
+}
+
+func (r *FileRepository) BatchCreate(data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
+	var response []models.BatchCreateResponse
+
+	for _, val := range data {
+		shortURL, err := r.Create(val.URL)
+		if err == nil {
+			response = append(response, models.BatchCreateResponse{URL: shortURL, UUID: val.UUID})
+		}
+	}
+	return response, nil
 }
 
 func (r *FileRepository) GetByShort(shortURL string) (string, error) {

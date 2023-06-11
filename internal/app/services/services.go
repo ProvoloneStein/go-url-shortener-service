@@ -2,11 +2,13 @@ package services
 
 import (
 	"github.com/ProvoloneStein/go-url-shortener-service/configs"
+	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
 	"net/url"
 )
 
 type Repository interface {
 	Create(fullURL string) (string, error)
+	BatchCreate(data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error)
 	GetByShort(shortURL string) (string, error)
 	Ping() error
 }
@@ -30,6 +32,10 @@ func (s *Service) CreateShortURL(fullURL string) (string, error) {
 		return "", err
 	}
 	return shortURL, nil
+}
+
+func (s *Service) BatchCreate(data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
+	return s.repo.BatchCreate(data)
 }
 
 func (s *Service) GetFullByID(shortURL string) (string, error) {

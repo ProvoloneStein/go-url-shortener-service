@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"database/sql"
+	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
@@ -52,6 +53,29 @@ func (r *PostgresRepository) Create(fullURL string) (string, error) {
 			return "", err
 		}
 	}
+}
+
+func (r *PostgresRepository) BatchCreate(data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
+	var response []models.BatchCreateResponse
+	tx, err := r.db.Begin()
+
+	for _, val := range data {
+		for {
+			shortURL := randomString()
+			var exists bool
+			row := tx.QueryRow("SELECT id FROM shortener WHERE  shorten = $1", shortURL)
+			err = row.Scan(&exists)
+			if err != nil {
+				if err == sql.ErrNoRows {
+					if _, err := tx.Exec("INSERT INTO shortener (url, shorten) VALUES($1, $2)", val.URL, shortURL); err == nil {
+						response = append(response, models.BatchCreateResponse{URL: shortURL, UUID: val.UUID})
+					}
+				}
+				break
+			}
+		}
+	}
+	return response, tx.Commit()
 }
 
 func (r *PostgresRepository) GetByShort(shortURL string) (string, error) {

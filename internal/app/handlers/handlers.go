@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/logger"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
@@ -10,6 +11,7 @@ import (
 //go:generate mockgen -source=handlers.go -destination=mocks/mock.go
 type Service interface {
 	CreateShortURL(fullURL string) (string, error)
+	BatchCreate(data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error)
 	GetFullByID(shortURL string) (string, error)
 	Ping() error
 }
