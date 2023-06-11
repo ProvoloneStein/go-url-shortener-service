@@ -34,7 +34,10 @@ func (h *Handler) InitHandler() *chi.Mux {
 	router.Get("/{id}", h.getByShort)
 
 	router.Route("/api", func(r chi.Router) {
-		r.Post("/shorten", h.createShortURLByJSON)
+		router.Route("/shorten", func(r chi.Router) {
+			r.Post("/", h.createShortURLByJSON)
+			r.Post("/batch", h.batchCreateURLByJSON)
+		})
 	})
 	return router
 }
