@@ -32,3 +32,7 @@ func (r *LocalRepository) GetByShort(shortURL string) (string, error) {
 	}
 	return "", errors.New("url not found")
 }
+
+func (r *LocalRepository) Ping() error {
+	return nil
+}

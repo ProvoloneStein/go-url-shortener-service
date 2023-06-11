@@ -8,6 +8,7 @@ import (
 type Repository interface {
 	Create(fullURL string) (string, error)
 	GetByShort(shortURL string) (string, error)
+	Ping() error
 }
 
 type Service struct {
@@ -33,4 +34,8 @@ func (s *Service) CreateShortURL(fullURL string) (string, error) {
 
 func (s *Service) GetFullByID(shortURL string) (string, error) {
 	return s.repo.GetByShort(shortURL)
+}
+
+func (s *Service) Ping() error {
+	return s.repo.Ping()
 }

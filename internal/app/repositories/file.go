@@ -116,3 +116,7 @@ func (r *FileRepository) GetByShort(shortURL string) (string, error) {
 	}
 	return "", errors.New("url not found")
 }
+
+func (r *FileRepository) Ping() error {
+	return nil
+}

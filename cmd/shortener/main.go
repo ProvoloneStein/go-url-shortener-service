@@ -26,7 +26,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if config.FileStorage == "" {
+	if config.DatabaseDSN != "" {
+		repos, err = repositories.NewPostgresRepository(config.DatabaseDSN)
+		if err != nil {
+			logger.Fatal("ошибка при иницилизации репозитория.", zap.Error(err))
+		}
+	} else if config.FileStorage == "" {
 		repos = repositories.NewLocalRepository()
 	} else {
 		file, err := os.OpenFile(config.FileStorage, os.O_CREATE|os.O_RDWR, 0666)
