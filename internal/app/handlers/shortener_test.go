@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -38,12 +39,12 @@ func TestHandler_createShortURL(t *testing.T) {
 			contentType: "type",
 			body:        "https://ya.ru",
 			mockBehavior: func(r *mock_handlers.MockService, fullURL string) {
-				r.EXPECT().CreateShortURL(fullURL).Return("123", nil).MaxTimes(1)
+				r.EXPECT().CreateShortURL(gomock.AssignableToTypeOf(reflect.TypeOf((*context.Context)(nil)).Elem()), fullURL).Return("123", nil).MaxTimes(1)
 			},
 			want: want{
 				contentType: "text/plain; charset=utf-8",
 				statusCode:  400,
-				body:        "Неверный header\n",
+				body:        "Неверный header запроса\n",
 			},
 		},
 		{
@@ -51,7 +52,7 @@ func TestHandler_createShortURL(t *testing.T) {
 			contentType: "text/plain",
 			body:        "https://ya.ru",
 			mockBehavior: func(r *mock_handlers.MockService, fullURL string) {
-				r.EXPECT().CreateShortURL(fullURL).Return("1", nil).MaxTimes(1)
+				r.EXPECT().CreateShortURL(gomock.AssignableToTypeOf(reflect.TypeOf((*context.Context)(nil)).Elem()), fullURL).Return("1", nil).MaxTimes(1)
 			},
 			want: want{
 				contentType: "text/plain; charset=utf-8",
@@ -110,7 +111,7 @@ func TestHandler_getByShort(t *testing.T) {
 			id:   "gwrags",
 			url:  "http://localhost:8080/gwrags",
 			mockBehavior: func(r *mock_handlers.MockService, shortURL string) {
-				r.EXPECT().GetFullByID(shortURL).Return("https://ya.ru", nil).MaxTimes(1)
+				r.EXPECT().GetFullByID(gomock.AssignableToTypeOf(reflect.TypeOf((*context.Context)(nil)).Elem()), shortURL).Return("https://ya.ru", nil).MaxTimes(1)
 			},
 			want: want{
 				statusCode: 307,
@@ -122,7 +123,7 @@ func TestHandler_getByShort(t *testing.T) {
 			id:   "adsga",
 			url:  "http://localhost:8080/adsga",
 			mockBehavior: func(r *mock_handlers.MockService, shortURL string) {
-				r.EXPECT().GetFullByID(shortURL).Return("", fmt.Errorf("Ошибочка")).MaxTimes(1)
+				r.EXPECT().GetFullByID(gomock.AssignableToTypeOf(reflect.TypeOf((*context.Context)(nil)).Elem()), shortURL).Return("", fmt.Errorf("Ошибочка")).MaxTimes(1)
 			},
 			want: want{
 				contentType: "text/plain; charset=utf-8",
