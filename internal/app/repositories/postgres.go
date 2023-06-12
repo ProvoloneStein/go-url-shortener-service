@@ -51,12 +51,16 @@ func (r *PostgresRepository) Create(fullURL string) (string, error) {
 		var id int
 		var pgErr *pgconn.PgError
 
-		row := r.db.QueryRow("SELECT id FROM shortener WHERE  shorten = $1", shortURL)
-		if err := row.Scan(&id); err != nil {
+		shortRow := r.db.QueryRow("SELECT id FROM shortener WHERE  shorten = $1", shortURL)
+		if err := shortRow.Scan(&id); err != nil {
 			if err == sql.ErrNoRows {
 				if _, err := r.db.Exec("INSERT INTO shortener (url, shorten) VALUES($1, $2)", fullURL, shortURL); err != nil {
 					if errors.As(err, &pgErr) && pgErr.Code == UniqueViolation {
-						return "", ErrorUniqueViolation
+						row := r.db.QueryRow("SELECT shorten FROM shortener WHERE  shorten = $1", shortURL)
+						if err := row.Scan(&shortURL); err != nil {
+							return "", err
+						}
+						return shortURL, ErrorUniqueViolation
 					}
 					return "", err
 				}

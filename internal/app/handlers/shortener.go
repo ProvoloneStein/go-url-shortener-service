@@ -27,12 +27,13 @@ func (h *Handler) createShortURL(w http.ResponseWriter, r *http.Request) {
 	res, err := h.services.CreateShortURL(string(body))
 	if err != nil {
 		if errors.Is(err, repositories.ErrorUniqueViolation) {
-			http.Error(w, "url уже существует", http.StatusConflict)
+			http.Error(w, res, http.StatusConflict)
+			return
+		} else {
+			h.logger.Error("ошибка при создании url", zap.Error(err))
+			http.Error(w, "Неверный запрос", http.StatusBadRequest)
 			return
 		}
-		h.logger.Error("ошибка при создании url", zap.Error(err))
-		http.Error(w, "Неверный запрос", http.StatusBadRequest)
-		return
 	}
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusCreated)
