@@ -5,6 +5,7 @@
 package mock_handlers
 
 import (
+	context "context"
 	reflect "reflect"
 
 	models "github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
@@ -35,48 +36,48 @@ func (m *MockService) EXPECT() *MockServiceMockRecorder {
 }
 
 // BatchCreate mocks base method.
-func (m *MockService) BatchCreate(data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
+func (m *MockService) BatchCreate(ctx context.Context, data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BatchCreate", data)
+	ret := m.ctrl.Call(m, "BatchCreate", ctx, data)
 	ret0, _ := ret[0].([]models.BatchCreateResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // BatchCreate indicates an expected call of BatchCreate.
-func (mr *MockServiceMockRecorder) BatchCreate(data interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) BatchCreate(ctx, data interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BatchCreate", reflect.TypeOf((*MockService)(nil).BatchCreate), data)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BatchCreate", reflect.TypeOf((*MockService)(nil).BatchCreate), ctx, data)
 }
 
 // CreateShortURL mocks base method.
-func (m *MockService) CreateShortURL(fullURL string) (string, error) {
+func (m *MockService) CreateShortURL(ctx context.Context, fullURL string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateShortURL", fullURL)
+	ret := m.ctrl.Call(m, "CreateShortURL", ctx, fullURL)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateShortURL indicates an expected call of CreateShortURL.
-func (mr *MockServiceMockRecorder) CreateShortURL(fullURL interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) CreateShortURL(ctx, fullURL interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateShortURL", reflect.TypeOf((*MockService)(nil).CreateShortURL), fullURL)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateShortURL", reflect.TypeOf((*MockService)(nil).CreateShortURL), ctx, fullURL)
 }
 
 // GetFullByID mocks base method.
-func (m *MockService) GetFullByID(shortURL string) (string, error) {
+func (m *MockService) GetFullByID(ctx context.Context, shortURL string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetFullByID", shortURL)
+	ret := m.ctrl.Call(m, "GetFullByID", ctx, shortURL)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetFullByID indicates an expected call of GetFullByID.
-func (mr *MockServiceMockRecorder) GetFullByID(shortURL interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) GetFullByID(ctx, shortURL interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFullByID", reflect.TypeOf((*MockService)(nil).GetFullByID), shortURL)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFullByID", reflect.TypeOf((*MockService)(nil).GetFullByID), ctx, shortURL)
 }
 
 // Ping mocks base method.
