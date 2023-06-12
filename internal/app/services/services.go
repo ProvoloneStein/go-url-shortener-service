@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"github.com/ProvoloneStein/go-url-shortener-service/configs"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
@@ -9,9 +10,9 @@ import (
 )
 
 type Repository interface {
-	Create(fullURL string) (string, error)
-	BatchCreate(data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error)
-	GetByShort(shortURL string) (string, error)
+	Create(ctx context.Context, fullURL string) (string, error)
+	BatchCreate(ctx context.Context, data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error)
+	GetByShort(ctx context.Context, shortURL string) (string, error)
 	Ping() error
 }
 
@@ -24,8 +25,8 @@ func NewService(cfg configs.AppConfig, repo Repository) *Service {
 	return &Service{cfg: cfg, repo: repo}
 }
 
-func (s *Service) CreateShortURL(fullURL string) (string, error) {
-	shortID, repoErr := s.repo.Create(fullURL)
+func (s *Service) CreateShortURL(ctx context.Context, fullURL string) (string, error) {
+	shortID, repoErr := s.repo.Create(ctx, fullURL)
 	if repoErr != nil && !errors.Is(repoErr, repositories.ErrorUniqueViolation) {
 		return "", repoErr
 	}
@@ -36,12 +37,12 @@ func (s *Service) CreateShortURL(fullURL string) (string, error) {
 	return shortURL, repoErr
 }
 
-func (s *Service) BatchCreate(data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
-	return s.repo.BatchCreate(data)
+func (s *Service) BatchCreate(ctx context.Context, data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
+	return s.repo.BatchCreate(ctx, data)
 }
 
-func (s *Service) GetFullByID(shortURL string) (string, error) {
-	return s.repo.GetByShort(shortURL)
+func (s *Service) GetFullByID(ctx context.Context, shortURL string) (string, error) {
+	return s.repo.GetByShort(ctx, shortURL)
 }
 
 func (s *Service) Ping() error {

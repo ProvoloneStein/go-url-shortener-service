@@ -23,28 +23,29 @@ type responseData struct {
 func (h *Handler) createShortURLByJSON(w http.ResponseWriter, r *http.Request) {
 	var requestBody requestData
 
+	ctx := r.Context()
 	ct := r.Header.Get("Content-Type")
 	if !strings.HasPrefix(ct, "application/json") && !strings.HasPrefix(ct, "application/x-gzip") {
-		http.Error(w, "Неверный header", http.StatusBadRequest)
+		http.Error(w, "неверный header запоса", http.StatusBadRequest)
 		return
 	}
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, "Ошибка при чтении тела запроса", http.StatusBadRequest)
+		http.Error(w, "ошибка при чтении тела запроса", http.StatusBadRequest)
 		return
 	}
 	if err := json.Unmarshal(body, &requestBody); err != nil {
-		http.Error(w, "Неверный запрос", http.StatusBadRequest)
+		http.Error(w, "неверое тело запроса", http.StatusBadRequest)
 		return
 	}
 	if _, err := govalidator.ValidateStruct(requestBody); err != nil {
-		http.Error(w, "Неверое тело запроса", http.StatusBadRequest)
+		http.Error(w, "ошибка валидации тела запроса", http.StatusBadRequest)
 		return
 	}
-	res, serviceErr := h.services.CreateShortURL(requestBody.URL)
+	res, serviceErr := h.services.CreateShortURL(ctx, requestBody.URL)
 	if serviceErr != nil && !errors.Is(serviceErr, repositories.ErrorUniqueViolation) {
 		h.logger.Error("ошибка при создании url", zap.Error(err))
-		http.Error(w, "Неверный запрос", http.StatusBadRequest)
+		http.Error(w, "неверный запрос", http.StatusBadRequest)
 		return
 	}
 	b, err := json.Marshal(&responseData{Result: res})
@@ -62,7 +63,7 @@ func (h *Handler) createShortURLByJSON(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if _, err = w.Write(b); err != nil {
-		h.logger.Error("ошибка при создании url", zap.Error(err))
+		h.logger.Error("ошибка при записи ответа", zap.Error(err))
 		return
 	}
 }
@@ -70,6 +71,7 @@ func (h *Handler) createShortURLByJSON(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) batchCreateURLByJSON(w http.ResponseWriter, r *http.Request) {
 	var requestBody []models.BatchCreateRequest
 
+	ctx := r.Context()
 	ct := r.Header.Get("Content-Type")
 	if !strings.HasPrefix(ct, "application/json") && !strings.HasPrefix(ct, "application/x-gzip") {
 		http.Error(w, "Неверный header", http.StatusBadRequest)
@@ -81,10 +83,10 @@ func (h *Handler) batchCreateURLByJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := json.Unmarshal(body, &requestBody); err != nil {
-		http.Error(w, "Неверный запрос", http.StatusBadRequest)
+		http.Error(w, "Неверное тело запрос", http.StatusBadRequest)
 		return
 	}
-	res, err := h.services.BatchCreate(requestBody)
+	res, err := h.services.BatchCreate(ctx, requestBody)
 	if err != nil {
 		h.logger.Error("ошибка при создании urls", zap.Error(err))
 		http.Error(w, "Неверный запрос", http.StatusBadRequest)

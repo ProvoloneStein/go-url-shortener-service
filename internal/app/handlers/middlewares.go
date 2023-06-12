@@ -14,9 +14,6 @@ type gzipWriter struct {
 }
 
 func (w gzipWriter) Write(b []byte) (int, error) {
-	//if binary.Size(b) < 1600 {
-	//	return w.Write(b)
-	//}
 	return w.Writer.Write(b)
 }
 

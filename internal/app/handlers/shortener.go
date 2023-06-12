@@ -14,9 +14,10 @@ import (
 )
 
 func (h *Handler) createShortURL(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	ct := r.Header.Get("Content-Type")
 	if !strings.HasPrefix(ct, "text/plain") && !strings.HasPrefix(ct, "application/x-gzip") {
-		http.Error(w, "Неверный header", http.StatusBadRequest)
+		http.Error(w, "Неверный header запроса", http.StatusBadRequest)
 		return
 	}
 	body, err := io.ReadAll(r.Body)
@@ -24,7 +25,7 @@ func (h *Handler) createShortURL(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Ошибка при чтении тела запроса", http.StatusBadRequest)
 		return
 	}
-	res, serviceErr := h.services.CreateShortURL(string(body))
+	res, serviceErr := h.services.CreateShortURL(ctx, string(body))
 	if serviceErr != nil && !errors.Is(serviceErr, repositories.ErrorUniqueViolation) {
 		h.logger.Error("ошибка при создании url", zap.Error(err))
 		http.Error(w, "Неверный запрос", http.StatusBadRequest)
@@ -38,14 +39,15 @@ func (h *Handler) createShortURL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if _, err = w.Write([]byte(res)); err != nil {
-		h.logger.Error("ошибка при создании url", zap.Error(err))
+		h.logger.Error("ошибка при записи ответа", zap.Error(err))
 		return
 	}
 }
 
 func (h *Handler) getByShort(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	shortURL := chi.URLParam(r, "id")
-	res, err := h.services.GetFullByID(shortURL)
+	res, err := h.services.GetFullByID(ctx, shortURL)
 	if err != nil {
 		http.Error(w, "Неверный запрос", http.StatusBadRequest)
 		return

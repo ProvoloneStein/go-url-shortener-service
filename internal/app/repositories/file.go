@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -99,43 +100,58 @@ func (r *FileRepository) WriteString(record ShorterRecord) error {
 
 }
 
-func (r *FileRepository) Create(fullURL string) (string, error) {
+func (r *FileRepository) Create(ctx context.Context, fullURL string) (string, error) {
 	var shortURL string
-	for key, val := range r.store {
-		if val == fullURL {
-			return key, ErrorUniqueViolation
-		}
-	}
-	for {
-		shortURL = randomString()
-		if _, ok := r.store[shortURL]; !ok {
-			r.store[shortURL] = fullURL
-			if err := r.WriteString(ShorterRecord{strconv.Itoa(r.uuid), shortURL, fullURL}); err != nil {
-				return "", err
+	select {
+	case <-ctx.Done():
+		return "", ctx.Err()
+	default:
+		for key, val := range r.store {
+			if val == fullURL {
+				return key, ErrorUniqueViolation
 			}
-			return shortURL, nil
+		}
+		for {
+			shortURL = randomString()
+			if _, ok := r.store[shortURL]; !ok {
+				r.store[shortURL] = fullURL
+				if err := r.WriteString(ShorterRecord{strconv.Itoa(r.uuid), shortURL, fullURL}); err != nil {
+					return "", err
+				}
+				return shortURL, nil
+			}
 		}
 	}
 }
 
-func (r *FileRepository) BatchCreate(data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
+func (r *FileRepository) BatchCreate(ctx context.Context, data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
 	var response []models.BatchCreateResponse
 
-	for _, val := range data {
-		shortURL, err := r.Create(val.URL)
-		if err == nil {
-			response = append(response, models.BatchCreateResponse{URL: shortURL, UUID: val.UUID})
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+		for _, val := range data {
+			shortURL, err := r.Create(ctx, val.URL)
+			if err == nil {
+				response = append(response, models.BatchCreateResponse{URL: shortURL, UUID: val.UUID})
+			}
 		}
+		return response, nil
 	}
-	return response, nil
 }
 
-func (r *FileRepository) GetByShort(shortURL string) (string, error) {
-	fullURL, ok := r.store[shortURL]
-	if ok {
-		return fullURL, nil
+func (r *FileRepository) GetByShort(ctx context.Context, shortURL string) (string, error) {
+	select {
+	case <-ctx.Done():
+		return "", ctx.Err()
+	default:
+		fullURL, ok := r.store[shortURL]
+		if ok {
+			return fullURL, nil
+		}
+		return "", errors.New("url not found")
 	}
-	return "", errors.New("url not found")
 }
 
 func (r *FileRepository) Ping() error {

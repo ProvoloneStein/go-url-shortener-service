@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"github.com/ProvoloneStein/go-url-shortener-service/configs"
@@ -16,7 +17,8 @@ type PostgresRepository struct {
 }
 
 func initPG(db *sql.DB) error {
-	_, err := db.Exec("CREATE TABLE IF NOT EXISTS shortener (id BIGSERIAL PRIMARY KEY, url TEXT UNIQUE NOT NULL, shorten TEXT UNIQUE NOT NULL)")
+	_, err := db.Exec("CREATE TABLE IF NOT EXISTS shortener " +
+		"(id BIGSERIAL PRIMARY KEY, url TEXT UNIQUE NOT NULL, shorten TEXT UNIQUE NOT NULL)")
 	if err != nil {
 		return err
 	}
@@ -45,19 +47,19 @@ func NewPostgresRepository(cfg configs.AppConfig, db *sql.DB) (*PostgresReposito
 
 const UniqueViolation = "23505"
 
-func (r *PostgresRepository) Create(fullURL string) (string, error) {
+func (r *PostgresRepository) Create(ctx context.Context, fullURL string) (string, error) {
 	var id int
 	var pgErr *pgconn.PgError
 
 	for {
 		shortURL := randomString()
 
-		shortRow := r.db.QueryRow("SELECT id FROM shortener WHERE  shorten = $1", shortURL)
+		shortRow := r.db.QueryRowContext(ctx, "SELECT id FROM shortener WHERE  shorten = $1", shortURL)
 		if err := shortRow.Scan(&id); err != nil {
 			if err == sql.ErrNoRows {
-				if _, err := r.db.Exec("INSERT INTO shortener (url, shorten) VALUES($1, $2)", fullURL, shortURL); err != nil {
+				if _, err := r.db.ExecContext(ctx, "INSERT INTO shortener (url, shorten) VALUES($1, $2)", fullURL, shortURL); err != nil {
 					if errors.As(err, &pgErr) && pgErr.Code == UniqueViolation {
-						row := r.db.QueryRow("SELECT shorten FROM shortener WHERE  url = $1", fullURL)
+						row := r.db.QueryRowContext(ctx, "SELECT shorten FROM shortener WHERE  url = $1", fullURL)
 						if err := row.Scan(&shortURL); err != nil {
 							return "", err
 						}
@@ -72,24 +74,22 @@ func (r *PostgresRepository) Create(fullURL string) (string, error) {
 	}
 }
 
-func (r *PostgresRepository) BatchCreate(data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
+func (r *PostgresRepository) BatchCreate(ctx context.Context, data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
 	var response []models.BatchCreateResponse
 
 	tx, err := r.db.Begin()
-
 	if err != nil {
 		return nil, err
 	}
-
 	for _, val := range data {
 		for {
 			shortURL := randomString()
 			var id int
-			row := tx.QueryRow("SELECT id FROM shortener WHERE  shorten = $1", shortURL)
+			row := tx.QueryRowContext(ctx, "SELECT id FROM shortener WHERE  shorten = $1", shortURL)
 			err = row.Scan(&id)
 			if err != nil {
 				if err == sql.ErrNoRows {
-					if _, err := tx.Exec("INSERT INTO shortener (url, shorten) VALUES($1, $2)", val.URL, shortURL); err == nil {
+					if _, err := tx.ExecContext(ctx, "INSERT INTO shortener (url, shorten) VALUES($1, $2)", val.URL, shortURL); err == nil {
 						resShortURL, err := url.JoinPath(r.cfg.BaseURL, shortURL)
 						if err == nil {
 							response = append(response, models.BatchCreateResponse{URL: resShortURL, UUID: val.UUID})
@@ -103,9 +103,9 @@ func (r *PostgresRepository) BatchCreate(data []models.BatchCreateRequest) ([]mo
 	return response, tx.Commit()
 }
 
-func (r *PostgresRepository) GetByShort(shortURL string) (string, error) {
+func (r *PostgresRepository) GetByShort(ctx context.Context, shortURL string) (string, error) {
 	var fullURL string
-	row := r.db.QueryRow("SELECT url FROM shortener WHERE  shorten = $1", shortURL)
+	row := r.db.QueryRowContext(ctx, "SELECT url FROM shortener WHERE  shorten = $1", shortURL)
 	if err := row.Scan(&fullURL); err != nil {
 		return "", err
 	}
