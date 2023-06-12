@@ -48,11 +48,11 @@ const UniqueViolation = "23505"
 func (r *PostgresRepository) Create(fullURL string) (string, error) {
 	for {
 		shortURL := randomString()
-		var exists bool
+		var id int
 		var pgErr *pgconn.PgError
 
 		row := r.db.QueryRow("SELECT id FROM shortener WHERE  shorten = $1", shortURL)
-		if err := row.Scan(&exists); err != nil {
+		if err := row.Scan(&id); err != nil {
 			if err == sql.ErrNoRows {
 				if _, err := r.db.Exec("INSERT INTO shortener (url, shorten) VALUES($1, $2)", fullURL, shortURL); err != nil {
 					if errors.As(err, &pgErr) && pgErr.Code == UniqueViolation {
@@ -78,9 +78,9 @@ func (r *PostgresRepository) BatchCreate(data []models.BatchCreateRequest) ([]mo
 	for _, val := range data {
 		for {
 			shortURL := randomString()
-			var exists bool
+			var id int
 			row := tx.QueryRow("SELECT id FROM shortener WHERE  shorten = $1", shortURL)
-			err = row.Scan(&exists)
+			err = row.Scan(&id)
 			if err != nil {
 				if err == sql.ErrNoRows {
 					if _, err := tx.Exec("INSERT INTO shortener (url, shorten) VALUES($1, $2)", val.URL, shortURL); err == nil {
