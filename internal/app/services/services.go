@@ -25,15 +25,15 @@ func NewService(cfg configs.AppConfig, repo Repository) *Service {
 }
 
 func (s *Service) CreateShortURL(fullURL string) (string, error) {
-	shortID, err := s.repo.Create(fullURL)
-	if err != nil && !errors.Is(err, repositories.ErrorUniqueViolation) {
-		return "", err
+	shortID, repoErr := s.repo.Create(fullURL)
+	if repoErr != nil && !errors.Is(repoErr, repositories.ErrorUniqueViolation) {
+		return "", repoErr
 	}
 	shortURL, err := url.JoinPath(s.cfg.BaseURL, shortID)
 	if err != nil {
 		return "", err
 	}
-	return shortURL, nil
+	return shortURL, repoErr
 }
 
 func (s *Service) BatchCreate(data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
