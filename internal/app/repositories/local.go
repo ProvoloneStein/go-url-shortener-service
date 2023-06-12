@@ -23,7 +23,7 @@ func (r *LocalRepository) Create(fullURL string) (string, error) {
 	var shortURL string
 	for _, val := range r.store {
 		if val == fullURL {
-			return "", errors.New("url уже существует")
+			return "", ErrorUniqueViolation
 		}
 	}
 	for {

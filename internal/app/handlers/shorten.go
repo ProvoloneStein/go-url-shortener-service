@@ -43,7 +43,7 @@ func (h *Handler) createShortURLByJSON(w http.ResponseWriter, r *http.Request) {
 	}
 	res, err := h.services.CreateShortURL(requestBody.URL)
 	if err != nil {
-		if errors.Is(err, repositories.UniqueViolationError) {
+		if errors.Is(err, repositories.ErrorUniqueViolation) {
 			http.Error(w, "url уже существует", http.StatusConflict)
 			return
 		}

@@ -26,7 +26,7 @@ func (h *Handler) createShortURL(w http.ResponseWriter, r *http.Request) {
 	}
 	res, err := h.services.CreateShortURL(string(body))
 	if err != nil {
-		if errors.Is(err, repositories.UniqueViolationError) {
+		if errors.Is(err, repositories.ErrorUniqueViolation) {
 			http.Error(w, "url уже существует", http.StatusConflict)
 			return
 		}

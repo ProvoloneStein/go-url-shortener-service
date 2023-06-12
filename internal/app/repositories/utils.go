@@ -5,7 +5,7 @@ import (
 	"math/rand"
 )
 
-var UniqueViolationError = errors.New("UniqueViolationError")
+var ErrorUniqueViolation = errors.New("UniqueViolationError")
 
 func randomString() string {
 	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")

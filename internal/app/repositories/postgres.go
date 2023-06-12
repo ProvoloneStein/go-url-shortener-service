@@ -56,7 +56,7 @@ func (r *PostgresRepository) Create(fullURL string) (string, error) {
 			if err == sql.ErrNoRows {
 				if _, err := r.db.Exec("INSERT INTO shortener (url, shorten) VALUES($1, $2)", fullURL, shortURL); err != nil {
 					if errors.As(err, &pgErr) && pgErr.Code == UniqueViolation {
-						return "", UniqueViolationError
+						return "", ErrorUniqueViolation
 					}
 					return "", err
 				}
