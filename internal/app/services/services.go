@@ -1,8 +1,10 @@
 package services
 
 import (
+	"errors"
 	"github.com/ProvoloneStein/go-url-shortener-service/configs"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
+	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/repositories"
 	"net/url"
 )
 
@@ -24,7 +26,7 @@ func NewService(cfg configs.AppConfig, repo Repository) *Service {
 
 func (s *Service) CreateShortURL(fullURL string) (string, error) {
 	shortID, err := s.repo.Create(fullURL)
-	if err != nil {
+	if err != nil && !errors.Is(err, repositories.ErrorUniqueViolation) {
 		return "", err
 	}
 	shortURL, err := url.JoinPath(s.cfg.BaseURL, shortID)

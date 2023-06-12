@@ -45,6 +45,7 @@ func (h *Handler) createShortURLByJSON(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, repositories.ErrorUniqueViolation) {
 			http.Error(w, res, http.StatusConflict)
+			return
 		} else {
 			h.logger.Error("ошибка при создании url", zap.Error(err))
 			http.Error(w, "Неверный запрос", http.StatusBadRequest)

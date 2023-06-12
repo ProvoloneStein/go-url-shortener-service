@@ -46,17 +46,18 @@ func NewPostgresRepository(cfg configs.AppConfig, db *sql.DB) (*PostgresReposito
 const UniqueViolation = "23505"
 
 func (r *PostgresRepository) Create(fullURL string) (string, error) {
+	var id int
+	var pgErr *pgconn.PgError
+
 	for {
 		shortURL := randomString()
-		var id int
-		var pgErr *pgconn.PgError
 
 		shortRow := r.db.QueryRow("SELECT id FROM shortener WHERE  shorten = $1", shortURL)
 		if err := shortRow.Scan(&id); err != nil {
 			if err == sql.ErrNoRows {
 				if _, err := r.db.Exec("INSERT INTO shortener (url, shorten) VALUES($1, $2)", fullURL, shortURL); err != nil {
 					if errors.As(err, &pgErr) && pgErr.Code == UniqueViolation {
-						row := r.db.QueryRow("SELECT shorten FROM shortener WHERE  shorten = $1", shortURL)
+						row := r.db.QueryRow("SELECT shorten FROM shortener WHERE  url = $1", fullURL)
 						if err := row.Scan(&shortURL); err != nil {
 							return "", err
 						}
@@ -73,6 +74,7 @@ func (r *PostgresRepository) Create(fullURL string) (string, error) {
 
 func (r *PostgresRepository) BatchCreate(data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
 	var response []models.BatchCreateResponse
+
 	tx, err := r.db.Begin()
 
 	if err != nil {
