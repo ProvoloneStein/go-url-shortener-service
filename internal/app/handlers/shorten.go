@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
+	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/repositories"
 	"github.com/asaskevich/govalidator"
 	"go.uber.org/zap"
 	"io"
@@ -41,6 +43,10 @@ func (h *Handler) createShortURLByJSON(w http.ResponseWriter, r *http.Request) {
 	}
 	res, err := h.services.CreateShortURL(requestBody.URL)
 	if err != nil {
+		if errors.Is(err, repositories.UniqueViolationError) {
+			http.Error(w, "url уже существует", http.StatusConflict)
+			return
+		}
 		h.logger.Error("ошибка при создании url", zap.Error(err))
 		http.Error(w, "Неверный запрос", http.StatusBadRequest)
 		return

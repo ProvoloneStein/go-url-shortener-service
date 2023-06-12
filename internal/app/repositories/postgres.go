@@ -2,8 +2,10 @@ package repositories
 
 import (
 	"database/sql"
+	"errors"
 	"github.com/ProvoloneStein/go-url-shortener-service/configs"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
+	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"net/url"
 )
@@ -14,7 +16,7 @@ type PostgresRepository struct {
 }
 
 func initPG(db *sql.DB) error {
-	_, err := db.Exec("CREATE TABLE IF NOT EXISTS shortener (id BIGSERIAL PRIMARY KEY, url TEXT NOT NULL, shorten TEXT UNIQUE NOT NULL)")
+	_, err := db.Exec("CREATE TABLE IF NOT EXISTS shortener (id BIGSERIAL PRIMARY KEY, url TEXT UNIQUE NOT NULL, shorten TEXT UNIQUE NOT NULL)")
 	if err != nil {
 		return err
 	}
@@ -41,14 +43,21 @@ func NewPostgresRepository(cfg configs.AppConfig, db *sql.DB) (*PostgresReposito
 	return &PostgresRepository{cfg, db}, nil
 }
 
+const UniqueViolation = "23505"
+
 func (r *PostgresRepository) Create(fullURL string) (string, error) {
 	for {
 		shortURL := randomString()
 		var exists bool
+		var pgErr *pgconn.PgError
+
 		row := r.db.QueryRow("SELECT id FROM shortener WHERE  shorten = $1", shortURL)
 		if err := row.Scan(&exists); err != nil {
 			if err == sql.ErrNoRows {
 				if _, err := r.db.Exec("INSERT INTO shortener (url, shorten) VALUES($1, $2)", fullURL, shortURL); err != nil {
+					if errors.As(err, &pgErr) && pgErr.Code == UniqueViolation {
+						return "", UniqueViolationError
+					}
 					return "", err
 				}
 				return shortURL, nil

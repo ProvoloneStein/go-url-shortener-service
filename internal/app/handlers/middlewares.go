@@ -14,6 +14,9 @@ type gzipWriter struct {
 }
 
 func (w gzipWriter) Write(b []byte) (int, error) {
+	//if binary.Size(b) < 1600 {
+	//	return w.Write(b)
+	//}
 	return w.Writer.Write(b)
 }
 
@@ -50,7 +53,6 @@ func needGzipWriter(r *http.Request) bool {
 func gzipReadWriterHandler(logger *zap.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// TODO если успею, то надо добавить провеку размера ответа (пока не понял как))
 			// переопределяем writer, если клиента поддерживает gzip-сжатие
 			wr := w
 			if needGzipWriter(r) {

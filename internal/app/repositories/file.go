@@ -101,6 +101,11 @@ func (r *FileRepository) WriteString(record ShorterRecord) error {
 
 func (r *FileRepository) Create(fullURL string) (string, error) {
 	var shortURL string
+	for _, val := range r.store {
+		if val == fullURL {
+			return "", errors.New("url уже существует")
+		}
+	}
 	for {
 		shortURL = randomString()
 		if _, ok := r.store[shortURL]; !ok {
