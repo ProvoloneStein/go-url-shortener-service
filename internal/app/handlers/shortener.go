@@ -24,19 +24,18 @@ func (h *Handler) createShortURL(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Ошибка при чтении тела запроса", http.StatusBadRequest)
 		return
 	}
-	res, err := h.services.CreateShortURL(string(body))
-	if err != nil {
-		if errors.Is(err, repositories.ErrorUniqueViolation) {
-			http.Error(w, res, http.StatusConflict)
-			return
-		} else {
-			h.logger.Error("ошибка при создании url", zap.Error(err))
-			http.Error(w, "Неверный запрос", http.StatusBadRequest)
-			return
-		}
+	res, serviceErr := h.services.CreateShortURL(string(body))
+	if serviceErr != nil && !errors.Is(serviceErr, repositories.ErrorUniqueViolation) {
+		h.logger.Error("ошибка при создании url", zap.Error(err))
+		http.Error(w, "Неверный запрос", http.StatusBadRequest)
+		return
 	}
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.WriteHeader(http.StatusCreated)
+	if errors.Is(serviceErr, repositories.ErrorUniqueViolation) {
+		w.WriteHeader(http.StatusConflict)
+	} else {
+		w.WriteHeader(http.StatusCreated)
+	}
 
 	if _, err = w.Write([]byte(res)); err != nil {
 		h.logger.Error("ошибка при создании url", zap.Error(err))

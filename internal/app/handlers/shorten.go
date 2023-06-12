@@ -41,16 +41,11 @@ func (h *Handler) createShortURLByJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Неверое тело запроса", http.StatusBadRequest)
 		return
 	}
-	res, err := h.services.CreateShortURL(requestBody.URL)
-	if err != nil {
-		if errors.Is(err, repositories.ErrorUniqueViolation) {
-			http.Error(w, res, http.StatusConflict)
-			return
-		} else {
-			h.logger.Error("ошибка при создании url", zap.Error(err))
-			http.Error(w, "Неверный запрос", http.StatusBadRequest)
-			return
-		}
+	res, serviceErr := h.services.CreateShortURL(requestBody.URL)
+	if serviceErr != nil && !errors.Is(serviceErr, repositories.ErrorUniqueViolation) {
+		h.logger.Error("ошибка при создании url", zap.Error(err))
+		http.Error(w, "Неверный запрос", http.StatusBadRequest)
+		return
 	}
 	b, err := json.Marshal(&responseData{Result: res})
 	if err != nil {
@@ -59,7 +54,12 @@ func (h *Handler) createShortURLByJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
+
+	if errors.Is(serviceErr, repositories.ErrorUniqueViolation) {
+		w.WriteHeader(http.StatusConflict)
+	} else {
+		w.WriteHeader(http.StatusCreated)
+	}
 
 	if _, err = w.Write(b); err != nil {
 		h.logger.Error("ошибка при создании url", zap.Error(err))
