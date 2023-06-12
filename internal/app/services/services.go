@@ -6,6 +6,7 @@ import (
 	"github.com/ProvoloneStein/go-url-shortener-service/configs"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/repositories"
+	"go.uber.org/zap"
 	"net/url"
 )
 
@@ -17,12 +18,13 @@ type Repository interface {
 }
 
 type Service struct {
-	cfg  configs.AppConfig
-	repo Repository
+	logger *zap.Logger
+	cfg    configs.AppConfig
+	repo   Repository
 }
 
-func NewService(cfg configs.AppConfig, repo Repository) *Service {
-	return &Service{cfg: cfg, repo: repo}
+func NewService(logger *zap.Logger, cfg configs.AppConfig, repo Repository) *Service {
+	return &Service{logger: logger, cfg: cfg, repo: repo}
 }
 
 func (s *Service) CreateShortURL(ctx context.Context, fullURL string) (string, error) {

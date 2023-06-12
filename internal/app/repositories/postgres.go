@@ -4,16 +4,19 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"github.com/ProvoloneStein/go-url-shortener-service/configs"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
 	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"go.uber.org/zap"
 	"net/url"
 )
 
 type PostgresRepository struct {
-	cfg configs.AppConfig
-	db  *sql.DB
+	logger *zap.Logger
+	cfg    configs.AppConfig
+	db     *sql.DB
 }
 
 func initPG(db *sql.DB) error {
@@ -38,11 +41,11 @@ func ConntectPG(dsnString string) (*sql.DB, error) {
 	return db, nil
 }
 
-func NewPostgresRepository(cfg configs.AppConfig, db *sql.DB) (*PostgresRepository, error) {
+func NewPostgresRepository(logger *zap.Logger, cfg configs.AppConfig, db *sql.DB) (*PostgresRepository, error) {
 	if err := initPG(db); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("ошибка при запросе к бд: %s", err)
 	}
-	return &PostgresRepository{cfg, db}, nil
+	return &PostgresRepository{logger: logger, cfg: cfg, db: db}, nil
 }
 
 const UniqueViolation = "23505"
@@ -61,15 +64,15 @@ func (r *PostgresRepository) Create(ctx context.Context, fullURL string) (string
 					if errors.As(err, &pgErr) && pgErr.Code == UniqueViolation {
 						row := r.db.QueryRowContext(ctx, "SELECT shorten FROM shortener WHERE  url = $1", fullURL)
 						if err := row.Scan(&shortURL); err != nil {
-							return "", err
+							return "", fmt.Errorf("ошибка при запросе к бд: %s", err)
 						}
 						return shortURL, ErrorUniqueViolation
 					}
-					return "", err
+					return "", fmt.Errorf("ошибка при запросе к бд: %s", err)
 				}
 				return shortURL, nil
 			}
-			return "", err
+			return "", fmt.Errorf("ошибка при запросе к бд: %s", err)
 		}
 	}
 }
@@ -93,8 +96,14 @@ func (r *PostgresRepository) BatchCreate(ctx context.Context, data []models.Batc
 						resShortURL, err := url.JoinPath(r.cfg.BaseURL, shortURL)
 						if err == nil {
 							response = append(response, models.BatchCreateResponse{URL: resShortURL, UUID: val.UUID})
+						} else {
+							r.logger.Error("ошибка при формировании url", zap.Error(err))
 						}
+					} else {
+						r.logger.Error("ошибка при запросе к бд", zap.Error(err))
 					}
+				} else {
+					r.logger.Error("ошибка при запросе к бд", zap.Error(err))
 				}
 				break
 			}
@@ -107,7 +116,7 @@ func (r *PostgresRepository) GetByShort(ctx context.Context, shortURL string) (s
 	var fullURL string
 	row := r.db.QueryRowContext(ctx, "SELECT url FROM shortener WHERE  shorten = $1", shortURL)
 	if err := row.Scan(&fullURL); err != nil {
-		return "", err
+		return "", fmt.Errorf("ошибка при запросе к бд: %s", err)
 	}
 	return fullURL, nil
 }
@@ -115,7 +124,7 @@ func (r *PostgresRepository) GetByShort(ctx context.Context, shortURL string) (s
 func (r *PostgresRepository) Ping() error {
 	err := r.db.Ping()
 	if err != nil {
-		return err
+		return fmt.Errorf("ошибка при запросе к бд: %s", err)
 	}
 	return nil
 }

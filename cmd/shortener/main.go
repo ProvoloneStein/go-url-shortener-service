@@ -32,12 +32,12 @@ func main() {
 			logger.Fatal("ошибка при подключении к postgress", zap.Error(err))
 		}
 		defer connect.Close()
-		repos, err = repositories.NewPostgresRepository(config, connect)
+		repos, err = repositories.NewPostgresRepository(logger, config, connect)
 		if err != nil {
 			logger.Fatal("ошибка при иницилизации репозитория.", zap.Error(err))
 		}
 	} else if config.FileStorage == "" {
-		repos = repositories.NewLocalRepository(config)
+		repos = repositories.NewLocalRepository(logger, config)
 	} else {
 		file, err := os.OpenFile(config.FileStorage, os.O_CREATE|os.O_RDWR, 0666)
 		if err != nil {
@@ -49,7 +49,7 @@ func main() {
 			logger.Fatal("ошибка при иницилизации репозитория.", zap.Error(err))
 		}
 	}
-	services := services.NewService(config, repos)
+	services := services.NewService(logger, config, repos)
 	handler := handlers.NewHandler(logger, services)
 	logger.Info(fmt.Sprintf("запускается сервер по адресу %s", config.Addr))
 	if err = server.Run(config.Addr, handler.InitHandler()); err != nil {

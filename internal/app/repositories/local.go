@@ -5,19 +5,22 @@ import (
 	"errors"
 	"github.com/ProvoloneStein/go-url-shortener-service/configs"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
+	"go.uber.org/zap"
 	"net/url"
 	"time"
 )
 
 type LocalRepository struct {
-	cfg   configs.AppConfig
-	store map[string]string
+	logger *zap.Logger
+	cfg    configs.AppConfig
+	store  map[string]string
 }
 
-func NewLocalRepository(cfg configs.AppConfig) *LocalRepository {
+func NewLocalRepository(logger *zap.Logger, cfg configs.AppConfig) *LocalRepository {
 	return &LocalRepository{
-		cfg:   cfg,
-		store: make(map[string]string),
+		logger: logger,
+		cfg:    cfg,
+		store:  make(map[string]string),
 	}
 }
 
