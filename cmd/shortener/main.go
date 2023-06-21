@@ -28,10 +28,10 @@ func main() {
 	}
 	if config.DatabaseDSN != "" {
 		repos, err = repositories.NewPostgresRepository(logger, config)
-		defer repos.Close()
 		if err != nil {
 			logger.Fatal("ошибка при иницилизации репозитория.", zap.Error(err))
 		}
+		defer repos.Close()
 	} else if config.FileStorage == "" {
 		repos = repositories.NewLocalRepository(logger, config)
 	} else {

@@ -49,11 +49,7 @@ func (h *Handler) getByShort(w http.ResponseWriter, r *http.Request) {
 	shortURL := chi.URLParam(r, "id")
 	res, err := h.services.GetFullByID(ctx, shortURL)
 	if err != nil {
-		if errors.Is(err, repositories.ErrorUniqueViolation) {
-			http.Error(w, "Неверный запрос", http.StatusBadRequest)
-		} else {
-			http.Error(w, "Неверный запрос", http.StatusBadRequest)
-		}
+		http.Error(w, "Неверный запрос", http.StatusBadRequest)
 		return
 	}
 	w.Header().Set("Location", res)
