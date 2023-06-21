@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"github.com/ProvoloneStein/go-url-shortener-service/configs"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
@@ -156,7 +157,11 @@ func (r *PostgresRepository) GetByShort(ctx context.Context, shortURL string) (s
 	var fullURL string
 	row := r.db.QueryRowContext(ctx, "SELECT url FROM shortener WHERE  shorten = $1", shortURL)
 	if err := row.Scan(&fullURL); err != nil {
-		return "", NewValueError(shortURL, ErrURLNotFound)
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", NewValueError(shortURL, ErrURLNotFound)
+		}
+		r.logger.Error("ошибка при формировании ответа", zap.Error(err))
+		return "", err
 	}
 	return fullURL, nil
 }
