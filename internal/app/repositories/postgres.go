@@ -51,15 +51,7 @@ func NewPostgresRepository(logger *zap.Logger, cfg configs.AppConfig) (*Postgres
 	return &PostgresRepository{logger: logger, cfg: cfg, db: db}, nil
 }
 
-const UniqueViolation = "23505"
-
-type tmpData struct {
-	Id    int    `db:"id"`
-	Full  string `db:"url"`
-	Short string `db:"shorten"`
-}
-
-func (r *PostgresRepository) GenerateShortUrl(ctx context.Context) (string, error) {
+func (r *PostgresRepository) GenerateShortURL(ctx context.Context) (string, error) {
 	var id int
 
 	select {
@@ -80,7 +72,7 @@ func (r *PostgresRepository) GenerateShortUrl(ctx context.Context) (string, erro
 }
 
 func (r *PostgresRepository) Create(ctx context.Context, fullURL, shortURL string) (string, error) {
-	var tD tmpData
+	var shortRes string
 
 	select {
 	case <-ctx.Done():
@@ -88,14 +80,14 @@ func (r *PostgresRepository) Create(ctx context.Context, fullURL, shortURL strin
 	default:
 	}
 
-	res := r.db.QueryRowContext(ctx, "INSERT INTO shortener (url, shorten) VALUES($1, $2) ON CONFLICT(url) DO UPDATE SET shorten = shortener.shorten RETURNING id, url, shorten", fullURL, shortURL)
-	if err := res.Scan(&tD.Id, &tD.Full, &tD.Short); err != nil {
+	res := r.db.QueryRowContext(ctx, "INSERT INTO shortener (url, shorten) VALUES($1, $2) ON CONFLICT(url) DO UPDATE SET shorten = shortener.shorten RETURNING shorten", fullURL, shortURL)
+	if err := res.Scan(&shortRes); err != nil {
 		return "", err
 	}
-	if tD.Short != shortURL {
-		return tD.Short, ErrorUniqueViolation
+	if shortRes != shortURL {
+		return shortRes, ErrorUniqueViolation
 	}
-	return tD.Short, nil
+	return shortRes, nil
 }
 
 func (r *PostgresRepository) BatchCreate(ctx context.Context, data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
@@ -116,7 +108,7 @@ func (r *PostgresRepository) BatchCreate(ctx context.Context, data []models.Batc
 	for _, val := range data {
 	generator:
 		for {
-			shortURL, err := r.GenerateShortUrl(ctx)
+			shortURL, err := r.GenerateShortURL(ctx)
 			if err != nil {
 				return nil, err
 			}

@@ -23,7 +23,7 @@ func NewLocalRepository(logger *zap.Logger, cfg configs.AppConfig) *LocalReposit
 	}
 }
 
-func (r *LocalRepository) GenerateShortUrl(ctx context.Context) (string, error) {
+func (r *LocalRepository) GenerateShortURL(ctx context.Context) (string, error) {
 
 	select {
 	case <-ctx.Done():
@@ -62,7 +62,7 @@ func (r *LocalRepository) BatchCreate(ctx context.Context, data []models.BatchCr
 	default:
 	}
 	for _, val := range data {
-		shortID, err := r.GenerateShortUrl(ctx)
+		shortID, err := r.GenerateShortURL(ctx)
 		if err != nil {
 			return response, err
 		}
@@ -71,7 +71,7 @@ func (r *LocalRepository) BatchCreate(ctx context.Context, data []models.BatchCr
 			r.logger.Error("ошибка при формировании url", zap.Error(err))
 			return response, err
 		}
-		shortID, err = r.Create(ctx, val.URL, shortID)
+		_, err = r.Create(ctx, val.URL, shortID)
 		if err != nil && !errors.Is(err, ErrorUniqueViolation) {
 			r.logger.Error("ошибка при записи url", zap.Error(err))
 			return response, err
@@ -91,7 +91,7 @@ func (r *LocalRepository) GetByShort(ctx context.Context, shortURL string) (stri
 	if ok {
 		return fullURL, nil
 	}
-	return "", NewValueError(shortURL, URLNotFound)
+	return "", NewValueError(shortURL, ErrURLNotFound)
 }
 
 func (r *LocalRepository) Ping() error {

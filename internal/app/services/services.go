@@ -12,7 +12,7 @@ import (
 
 type Repository interface {
 	Create(ctx context.Context, fullURL, shortURL string) (string, error)
-	GenerateShortUrl(ctx context.Context) (string, error)
+	GenerateShortURL(ctx context.Context) (string, error)
 	BatchCreate(ctx context.Context, data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error)
 	GetByShort(ctx context.Context, shortURL string) (string, error)
 	Ping() error
@@ -30,7 +30,7 @@ func NewService(logger *zap.Logger, cfg configs.AppConfig, repo Repository) *Ser
 }
 
 func (s *Service) CreateShortURL(ctx context.Context, fullURL string) (string, error) {
-	shortID, err := s.repo.GenerateShortUrl(ctx)
+	shortID, err := s.repo.GenerateShortURL(ctx)
 	if err != nil {
 		return "", err
 	}

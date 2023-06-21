@@ -101,7 +101,7 @@ func (r *FileRepository) WriteString(record ShorterRecord) error {
 
 }
 
-func (r *FileRepository) GenerateShortUrl(ctx context.Context) (string, error) {
+func (r *FileRepository) GenerateShortURL(ctx context.Context) (string, error) {
 
 	select {
 	case <-ctx.Done():
@@ -144,7 +144,7 @@ func (r *FileRepository) BatchCreate(ctx context.Context, data []models.BatchCre
 	default:
 	}
 	for _, val := range data {
-		shortID, err := r.GenerateShortUrl(ctx)
+		shortID, err := r.GenerateShortURL(ctx)
 		if err != nil {
 			return response, err
 		}
@@ -153,7 +153,7 @@ func (r *FileRepository) BatchCreate(ctx context.Context, data []models.BatchCre
 			r.logger.Error("ошибка при формировании url", zap.Error(err))
 			return response, err
 		}
-		shortID, err = r.Create(ctx, val.URL, shortID)
+		_, err = r.Create(ctx, val.URL, shortID)
 		if err != nil && !errors.Is(err, ErrorUniqueViolation) {
 			r.logger.Error("ошибка при записи url", zap.Error(err))
 			return response, err
@@ -173,7 +173,7 @@ func (r *FileRepository) GetByShort(ctx context.Context, shortURL string) (strin
 	if ok {
 		return fullURL, nil
 	}
-	return "", NewValueError(shortURL, URLNotFound)
+	return "", NewValueError(shortURL, ErrURLNotFound)
 }
 
 func (r *FileRepository) Ping() error {
