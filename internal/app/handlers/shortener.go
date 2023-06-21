@@ -25,14 +25,14 @@ func (h *Handler) createShortURL(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Ошибка при чтении тела запроса", http.StatusBadRequest)
 		return
 	}
-	res, serviceErr := h.services.CreateShortURL(ctx, string(body))
-	if serviceErr != nil && !errors.Is(serviceErr, repositories.ErrorUniqueViolation) {
+	res, err := h.services.CreateShortURL(ctx, string(body))
+	if err != nil && !errors.Is(err, repositories.ErrorUniqueViolation) {
 		h.logger.Error("ошибка при создании url", zap.Error(err))
 		http.Error(w, "Неверный запрос", http.StatusBadRequest)
 		return
 	}
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	if errors.Is(serviceErr, repositories.ErrorUniqueViolation) {
+	if errors.Is(err, repositories.ErrorUniqueViolation) {
 		w.WriteHeader(http.StatusConflict)
 	} else {
 		w.WriteHeader(http.StatusCreated)
@@ -49,7 +49,11 @@ func (h *Handler) getByShort(w http.ResponseWriter, r *http.Request) {
 	shortURL := chi.URLParam(r, "id")
 	res, err := h.services.GetFullByID(ctx, shortURL)
 	if err != nil {
-		http.Error(w, "Неверный запрос", http.StatusBadRequest)
+		if errors.Is(err, repositories.ErrorUniqueViolation) {
+			http.Error(w, "Неверный запрос", http.StatusBadRequest)
+		} else {
+			http.Error(w, "Неверный запрос", http.StatusBadRequest)
+		}
 		return
 	}
 	w.Header().Set("Location", res)

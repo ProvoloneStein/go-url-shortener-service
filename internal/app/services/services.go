@@ -11,10 +11,12 @@ import (
 )
 
 type Repository interface {
-	Create(ctx context.Context, fullURL string) (string, error)
+	Create(ctx context.Context, fullURL, shortURL string) (string, error)
+	GenerateShortUrl(ctx context.Context) (string, error)
 	BatchCreate(ctx context.Context, data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error)
 	GetByShort(ctx context.Context, shortURL string) (string, error)
 	Ping() error
+	Close() error
 }
 
 type Service struct {
@@ -28,7 +30,11 @@ func NewService(logger *zap.Logger, cfg configs.AppConfig, repo Repository) *Ser
 }
 
 func (s *Service) CreateShortURL(ctx context.Context, fullURL string) (string, error) {
-	shortID, repoErr := s.repo.Create(ctx, fullURL)
+	shortID, err := s.repo.GenerateShortUrl(ctx)
+	if err != nil {
+		return "", err
+	}
+	shortID, repoErr := s.repo.Create(ctx, fullURL, shortID)
 	if repoErr != nil && !errors.Is(repoErr, repositories.ErrorUniqueViolation) {
 		return "", repoErr
 	}

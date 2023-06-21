@@ -3,12 +3,11 @@ package repositories
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"github.com/ProvoloneStein/go-url-shortener-service/configs"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
-	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap"
 	"net/url"
 )
@@ -16,20 +15,20 @@ import (
 type PostgresRepository struct {
 	logger *zap.Logger
 	cfg    configs.AppConfig
-	db     *sql.DB
+	db     *sqlx.DB
 }
 
-func initPG(db *sql.DB) error {
+func initPG(db *sqlx.DB) error {
 	_, err := db.Exec("CREATE TABLE IF NOT EXISTS shortener " +
-		"(id BIGSERIAL PRIMARY KEY, url TEXT UNIQUE NOT NULL, shorten TEXT UNIQUE NOT NULL)")
+		"(id BIGSERIAL PRIMARY KEY, url VARCHAR(256) UNIQUE NOT NULL, shorten VARCHAR(256) UNIQUE NOT NULL, correlation_id VARCHAR(256))")
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func ConntectPG(dsnString string) (*sql.DB, error) {
-	db, err := sql.Open("pgx", dsnString)
+func ConntectPG(dsnString string) (*sqlx.DB, error) {
+	db, err := sqlx.Open("pgx", dsnString)
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +40,11 @@ func ConntectPG(dsnString string) (*sql.DB, error) {
 	return db, nil
 }
 
-func NewPostgresRepository(logger *zap.Logger, cfg configs.AppConfig, db *sql.DB) (*PostgresRepository, error) {
+func NewPostgresRepository(logger *zap.Logger, cfg configs.AppConfig) (*PostgresRepository, error) {
+	db, err := ConntectPG(cfg.DatabaseDSN)
+	if err != nil {
+		return nil, err
+	}
 	if err := initPG(db); err != nil {
 		return nil, fmt.Errorf("ошибка при запросе к бд: %s", err)
 	}
@@ -50,65 +53,104 @@ func NewPostgresRepository(logger *zap.Logger, cfg configs.AppConfig, db *sql.DB
 
 const UniqueViolation = "23505"
 
-func (r *PostgresRepository) Create(ctx context.Context, fullURL string) (string, error) {
-	var id int
-	var pgErr *pgconn.PgError
+type tmpData struct {
+	Id    int    `db:"id"`
+	Full  string `db:"url"`
+	Short string `db:"shorten"`
+}
 
+func (r *PostgresRepository) GenerateShortUrl(ctx context.Context) (string, error) {
+	var id int
+
+	select {
+	case <-ctx.Done():
+		return "", ctx.Err()
+	default:
+	}
 	for {
 		shortURL := randomString()
-
 		shortRow := r.db.QueryRowContext(ctx, "SELECT id FROM shortener WHERE  shorten = $1", shortURL)
 		if err := shortRow.Scan(&id); err != nil {
 			if err == sql.ErrNoRows {
-				if _, err := r.db.ExecContext(ctx, "INSERT INTO shortener (url, shorten) VALUES($1, $2)", fullURL, shortURL); err != nil {
-					if errors.As(err, &pgErr) && pgErr.Code == UniqueViolation {
-						row := r.db.QueryRowContext(ctx, "SELECT shorten FROM shortener WHERE  url = $1", fullURL)
-						if err := row.Scan(&shortURL); err != nil {
-							return "", fmt.Errorf("ошибка при запросе к бд: %s", err)
-						}
-						return shortURL, ErrorUniqueViolation
-					}
-					return "", fmt.Errorf("ошибка при запросе к бд: %s", err)
-				}
 				return shortURL, nil
 			}
-			return "", fmt.Errorf("ошибка при запросе к бд: %s", err)
+			return "", err
 		}
 	}
 }
 
+func (r *PostgresRepository) Create(ctx context.Context, fullURL, shortURL string) (string, error) {
+	var tD tmpData
+
+	select {
+	case <-ctx.Done():
+		return "", ctx.Err()
+	default:
+	}
+
+	res := r.db.QueryRowContext(ctx, "INSERT INTO shortener (url, shorten) VALUES($1, $2) ON CONFLICT(url) DO UPDATE SET shorten = shortener.shorten RETURNING id, url, shorten", fullURL, shortURL)
+	if err := res.Scan(&tD.Id, &tD.Full, &tD.Short); err != nil {
+		return "", err
+	}
+	if tD.Short != shortURL {
+		return tD.Short, ErrorUniqueViolation
+	}
+	return tD.Short, nil
+}
+
 func (r *PostgresRepository) BatchCreate(ctx context.Context, data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
+	var queryData []models.BatchCreateData
 	var response []models.BatchCreateResponse
 
-	tx, err := r.db.Begin()
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+
+	tx, err := r.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
+	// генерируем список сокращенных урлов
 	for _, val := range data {
+	generator:
 		for {
-			shortURL := randomString()
-			var id int
-			row := tx.QueryRowContext(ctx, "SELECT id FROM shortener WHERE  shorten = $1", shortURL)
-			err = row.Scan(&id)
+			shortURL, err := r.GenerateShortUrl(ctx)
 			if err != nil {
-				if err == sql.ErrNoRows {
-					if _, err := tx.ExecContext(ctx, "INSERT INTO shortener (url, shorten) VALUES($1, $2)", val.URL, shortURL); err == nil {
-						resShortURL, err := url.JoinPath(r.cfg.BaseURL, shortURL)
-						if err == nil {
-							response = append(response, models.BatchCreateResponse{URL: resShortURL, UUID: val.UUID})
-						} else {
-							r.logger.Error("ошибка при формировании url", zap.Error(err))
-						}
-					} else {
-						r.logger.Error("ошибка при запросе к бд", zap.Error(err))
-					}
-				} else {
-					r.logger.Error("ошибка при запросе к бд", zap.Error(err))
-				}
-				break
+				return nil, err
 			}
+			// проверяем, что не задублировали ссылку
+			for _, row := range queryData {
+				if row.ShortURL == shortURL {
+					continue generator
+				}
+			}
+			queryData = append(queryData, models.BatchCreateData{URL: val.URL, UUID: val.UUID, ShortURL: shortURL})
+			break
 		}
 	}
+	query := "INSERT INTO shortener (url, shorten, correlation_id) VALUES(:url, :shorten, :correlation_id) ON CONFLICT(url)  DO UPDATE SET shorten = shortener.shorten RETURNING shorten, correlation_id"
+	// создаем
+	rows, err := tx.NamedQuery(query, queryData)
+	if err != nil {
+		r.logger.Error("ошибка при запросе url", zap.Error(err))
+		return nil, err
+	}
+	// обрабатываем ответ
+	for rows.Next() {
+		var row = models.BatchCreateResponse{}
+		if err := rows.StructScan(&row); err != nil {
+			return nil, tx.Rollback()
+		}
+		row.ShortURL, err = url.JoinPath(r.cfg.BaseURL, row.ShortURL)
+		if err != nil {
+			r.logger.Error("ошибка при формировании url", zap.Error(err))
+			return nil, tx.Rollback()
+		}
+		response = append(response, row)
+	}
+
 	return response, tx.Commit()
 }
 
@@ -127,4 +169,8 @@ func (r *PostgresRepository) Ping() error {
 		return fmt.Errorf("ошибка при запросе к бд: %s", err)
 	}
 	return nil
+}
+
+func (r *PostgresRepository) Close() error {
+	return r.db.Close()
 }

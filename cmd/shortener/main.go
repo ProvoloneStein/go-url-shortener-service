@@ -27,12 +27,8 @@ func main() {
 		log.Fatal(err)
 	}
 	if config.DatabaseDSN != "" {
-		connect, err := repositories.ConntectPG(config.DatabaseDSN)
-		if err != nil {
-			logger.Fatal("ошибка при подключении к postgress", zap.Error(err))
-		}
-		defer connect.Close()
-		repos, err = repositories.NewPostgresRepository(logger, config, connect)
+		repos, err = repositories.NewPostgresRepository(logger, config)
+		defer repos.Close()
 		if err != nil {
 			logger.Fatal("ошибка при иницилизации репозитория.", zap.Error(err))
 		}

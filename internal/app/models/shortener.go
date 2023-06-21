@@ -5,7 +5,13 @@ type BatchCreateRequest struct {
 	UUID string `json:"correlation_id"`
 }
 
+type BatchCreateData struct {
+	URL      string `json:"-" db:"url"`
+	ShortURL string `json:"short_url" db:"shorten"`
+	UUID     string `json:"correlation_id" db:"correlation_id"`
+}
+
 type BatchCreateResponse struct {
-	URL  string `json:"short_url"`
-	UUID string `json:"correlation_id"`
+	ShortURL string `json:"short_url" db:"shorten"`
+	UUID     string `json:"correlation_id" db:"correlation_id"`
 }

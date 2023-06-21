@@ -7,7 +7,6 @@ import (
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
 	"go.uber.org/zap"
 	"net/url"
-	"time"
 )
 
 type LocalRepository struct {
@@ -24,25 +23,34 @@ func NewLocalRepository(logger *zap.Logger, cfg configs.AppConfig) *LocalReposit
 	}
 }
 
-func (r *LocalRepository) Create(ctx context.Context, fullURL string) (string, error) {
-	var shortURL string
+func (r *LocalRepository) GenerateShortUrl(ctx context.Context) (string, error) {
+
 	select {
 	case <-ctx.Done():
 		return "", ctx.Err()
 	default:
-		for key, val := range r.store {
-			if val == fullURL {
-				return key, ErrorUniqueViolation
-			}
-		}
-		for {
-			shortURL = randomString()
-			if _, ok := r.store[shortURL]; !ok {
-				r.store[shortURL] = fullURL
-				return shortURL, nil
-			}
+	}
+	for {
+		shortURL := randomString()
+		if _, ok := r.store[shortURL]; !ok {
+			return shortURL, nil
 		}
 	}
+}
+
+func (r *LocalRepository) Create(ctx context.Context, fullURL, shortURL string) (string, error) {
+	select {
+	case <-ctx.Done():
+		return "", ctx.Err()
+	default:
+	}
+	for key, val := range r.store {
+		if val == fullURL {
+			return key, ErrorUniqueViolation
+		}
+	}
+	r.store[shortURL] = fullURL
+	return shortURL, nil
 }
 
 func (r *LocalRepository) BatchCreate(ctx context.Context, data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
@@ -52,18 +60,25 @@ func (r *LocalRepository) BatchCreate(ctx context.Context, data []models.BatchCr
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	default:
-		for _, val := range data {
-			time.Sleep(time.Second)
-			shortURL, err := r.Create(ctx, val.URL)
-			if err == nil {
-				resShortURL, err := url.JoinPath(r.cfg.BaseURL, shortURL)
-				if err == nil {
-					response = append(response, models.BatchCreateResponse{URL: resShortURL, UUID: val.UUID})
-				}
-			}
-		}
-		return response, nil
 	}
+	for _, val := range data {
+		shortID, err := r.GenerateShortUrl(ctx)
+		if err != nil {
+			return response, err
+		}
+		shortURL, err := url.JoinPath(r.cfg.BaseURL, shortID)
+		if err != nil {
+			r.logger.Error("ошибка при формировании url", zap.Error(err))
+			return response, err
+		}
+		shortID, err = r.Create(ctx, val.URL, shortID)
+		if err != nil && !errors.Is(err, ErrorUniqueViolation) {
+			r.logger.Error("ошибка при записи url", zap.Error(err))
+			return response, err
+		}
+		response = append(response, models.BatchCreateResponse{ShortURL: shortURL, UUID: val.UUID})
+	}
+	return response, nil
 }
 
 func (r *LocalRepository) GetByShort(ctx context.Context, shortURL string) (string, error) {
@@ -71,14 +86,18 @@ func (r *LocalRepository) GetByShort(ctx context.Context, shortURL string) (stri
 	case <-ctx.Done():
 		return "", ctx.Err()
 	default:
-		fullURL, ok := r.store[shortURL]
-		if ok {
-			return fullURL, nil
-		}
-		return "", errors.New("url not found")
 	}
+	fullURL, ok := r.store[shortURL]
+	if ok {
+		return fullURL, nil
+	}
+	return "", NewValueError(shortURL, UrlNotFound)
 }
 
 func (r *LocalRepository) Ping() error {
+	return nil
+}
+
+func (r *LocalRepository) Close() error {
 	return nil
 }
