@@ -129,6 +129,7 @@ func (r *PostgresRepository) BatchCreate(ctx context.Context, data []models.Batc
 		r.logger.Error("ошибка при запросе url", zap.Error(err))
 		return nil, err
 	}
+	defer rows.Close()
 	// обрабатываем ответ
 	for rows.Next() {
 		var row = models.BatchCreateResponse{}
