@@ -138,10 +138,15 @@ func (r *PostgresRepository) BatchCreate(ctx context.Context, data []models.Batc
 		}
 		row.ShortURL, err = url.JoinPath(r.cfg.BaseURL, row.ShortURL)
 		if err != nil {
-			r.logger.Error("ошибка при формировании url", zap.Error(err))
+			r.logger.Error("ошибка при формировании ответа", zap.Error(err))
 			return nil, tx.Rollback()
 		}
 		response = append(response, row)
+	}
+
+	if err := rows.Err(); err != nil {
+		r.logger.Error("ошибка при формировании ответа", zap.Error(err))
+		return nil, tx.Rollback()
 	}
 
 	return response, tx.Commit()
