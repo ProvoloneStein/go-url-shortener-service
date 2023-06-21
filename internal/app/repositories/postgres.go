@@ -156,7 +156,7 @@ func (r *PostgresRepository) GetByShort(ctx context.Context, shortURL string) (s
 	var fullURL string
 	row := r.db.QueryRowContext(ctx, "SELECT url FROM shortener WHERE  shorten = $1", shortURL)
 	if err := row.Scan(&fullURL); err != nil {
-		return "", fmt.Errorf("ошибка при запросе к бд: %s", err)
+		return "", NewValueError(shortURL, ErrURLNotFound)
 	}
 	return fullURL, nil
 }

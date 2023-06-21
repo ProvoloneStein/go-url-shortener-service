@@ -15,15 +15,20 @@ type ValueError struct {
 }
 
 // Error добавляет поддержку интерфейса error для типа ValueError.
-func (ve *ValueError) Error() string {
-	return fmt.Sprintf("%v - %v", ve.Value, ve.Err)
-}
 
 func NewValueError(value string, err error) error {
 	return &ValueError{
 		Value: value,
 		Err:   err,
 	}
+}
+
+func (ve *ValueError) Error() string {
+	return fmt.Sprintf("%v - %v", ve.Value, ve.Err)
+}
+
+func (ve *ValueError) Unwrap() error {
+	return ve.Err
 }
 
 func randomString() string {
