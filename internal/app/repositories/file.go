@@ -173,7 +173,7 @@ func (r *FileRepository) GetByShort(ctx context.Context, shortURL string) (strin
 	if ok {
 		return fullURL, nil
 	}
-	return "", NewValueError(shortURL, UrlNotFound)
+	return "", NewValueError(shortURL, URLNotFound)
 }
 
 func (r *FileRepository) Ping() error {

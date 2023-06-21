@@ -91,7 +91,7 @@ func (r *LocalRepository) GetByShort(ctx context.Context, shortURL string) (stri
 	if ok {
 		return fullURL, nil
 	}
-	return "", NewValueError(shortURL, UrlNotFound)
+	return "", NewValueError(shortURL, URLNotFound)
 }
 
 func (r *LocalRepository) Ping() error {

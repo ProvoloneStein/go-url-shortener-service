@@ -7,7 +7,7 @@ import (
 )
 
 var ErrorUniqueViolation = errors.New("UniqueViolationError")
-var UrlNotFound = errors.New("UrlNotFound")
+var URLNotFound = errors.New("UrlNotFound")
 
 type ValueError struct {
 	Value string
