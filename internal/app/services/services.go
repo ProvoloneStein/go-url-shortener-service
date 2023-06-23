@@ -33,11 +33,11 @@ func (s *Service) CreateShortURL(ctx context.Context, fullURL string) (string, e
 		shortID := repositories.RandomString()
 		shortID, repoErr := s.repo.Create(ctx, fullURL, shortID)
 		if repoErr != nil {
-			if !errors.Is(repoErr, repositories.ErrorUniqueViolation) {
-				return "", repoErr
-			}
 			if errors.Is(repoErr, repositories.ErrShortURLExists) {
 				continue
+			}
+			if !errors.Is(repoErr, repositories.ErrorUniqueViolation) {
+				return "", repoErr
 			}
 		}
 		shortURL, err := url.JoinPath(s.cfg.BaseURL, shortID)
