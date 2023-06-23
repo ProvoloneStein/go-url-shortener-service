@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/ProvoloneStein/go-url-shortener-service/configs"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
+	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/services"
 	"go.uber.org/zap"
 	"io"
 	"net/url"
@@ -101,19 +102,17 @@ func (r *FileRepository) WriteString(record ShorterRecord) error {
 
 }
 
-func (r *FileRepository) GenerateShortURL(ctx context.Context) (string, error) {
+func (r *FileRepository) validateUniqueShortURL(ctx context.Context, shortURL string) error {
 
 	select {
 	case <-ctx.Done():
-		return "", ctx.Err()
+		return ctx.Err()
 	default:
 	}
-	for {
-		shortURL := randomString()
-		if _, ok := r.store[shortURL]; !ok {
-			return shortURL, nil
-		}
+	if _, ok := r.store[shortURL]; !ok {
+		return nil
 	}
+	return ErrShortURLExists
 }
 
 func (r *FileRepository) Create(ctx context.Context, fullURL, shortURL string) (string, error) {
@@ -144,10 +143,8 @@ func (r *FileRepository) BatchCreate(ctx context.Context, data []models.BatchCre
 	default:
 	}
 	for _, val := range data {
-		shortID, err := r.GenerateShortURL(ctx)
-		if err != nil {
-			return response, err
-		}
+		shortID := services.RandomString()
+
 		shortURL, err := url.JoinPath(r.cfg.BaseURL, shortID)
 		if err != nil {
 			r.logger.Error("ошибка при формировании url", zap.Error(err))
@@ -173,7 +170,7 @@ func (r *FileRepository) GetByShort(ctx context.Context, shortURL string) (strin
 	if ok {
 		return fullURL, nil
 	}
-	return "", NewValueError(shortURL, ErrURLNotFound)
+	return "", fmt.Errorf("%w: %s", ErrURLNotFound, shortURL)
 }
 
 func (r *FileRepository) Ping() error {

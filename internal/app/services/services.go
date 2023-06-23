@@ -12,7 +12,6 @@ import (
 
 type Repository interface {
 	Create(ctx context.Context, fullURL, shortURL string) (string, error)
-	GenerateShortURL(ctx context.Context) (string, error)
 	BatchCreate(ctx context.Context, data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error)
 	GetByShort(ctx context.Context, shortURL string) (string, error)
 	Ping() error
@@ -30,19 +29,23 @@ func NewService(logger *zap.Logger, cfg configs.AppConfig, repo Repository) *Ser
 }
 
 func (s *Service) CreateShortURL(ctx context.Context, fullURL string) (string, error) {
-	shortID, err := s.repo.GenerateShortURL(ctx)
-	if err != nil {
-		return "", err
+	for {
+		shortID := RandomString()
+		_, repoErr := s.repo.Create(ctx, fullURL, shortID)
+		if repoErr != nil {
+			if !errors.Is(repoErr, repositories.ErrorUniqueViolation) {
+				return "", repoErr
+			}
+			if errors.Is(repoErr, repositories.ErrShortURLExists) {
+				continue
+			}
+		}
+		shortURL, err := url.JoinPath(s.cfg.BaseURL, shortID)
+		if err != nil {
+			return "", err
+		}
+		return shortURL, repoErr
 	}
-	shortID, repoErr := s.repo.Create(ctx, fullURL, shortID)
-	if repoErr != nil && !errors.Is(repoErr, repositories.ErrorUniqueViolation) {
-		return "", repoErr
-	}
-	shortURL, err := url.JoinPath(s.cfg.BaseURL, shortID)
-	if err != nil {
-		return "", err
-	}
-	return shortURL, repoErr
 }
 
 func (s *Service) BatchCreate(ctx context.Context, data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
