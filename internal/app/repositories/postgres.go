@@ -96,7 +96,7 @@ func (r *PostgresRepository) Create(ctx context.Context, fullURL, shortURL strin
 		return shortRes, ErrorUniqueViolation
 	}
 
-	return shortRes, nil
+	return shortRes, tx.Commit()
 }
 
 func (r *PostgresRepository) BatchCreate(ctx context.Context, data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
