@@ -96,6 +96,7 @@ func (r *DBRepository) Create(ctx context.Context, fullURL, shortURL string) (st
 	}
 
 	if shortRes != shortURL {
+		tx.Rollback()
 		return shortRes, ErrorUniqueViolation
 	}
 
