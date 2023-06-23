@@ -13,7 +13,7 @@ import (
 	"net/url"
 )
 
-type PostgresRepository struct {
+type DBRepository struct {
 	logger *zap.Logger
 	cfg    configs.AppConfig
 	db     *sqlx.DB
@@ -41,7 +41,7 @@ func connectPG(dsnString string) (*sqlx.DB, error) {
 	return db, nil
 }
 
-func NewPostgresRepository(logger *zap.Logger, cfg configs.AppConfig) (*PostgresRepository, error) {
+func NewDBRepository(logger *zap.Logger, cfg configs.AppConfig) (*DBRepository, error) {
 	db, err := connectPG(cfg.DatabaseDSN)
 	if err != nil {
 		return nil, err
@@ -49,10 +49,10 @@ func NewPostgresRepository(logger *zap.Logger, cfg configs.AppConfig) (*Postgres
 	if err := initPG(db); err != nil {
 		return nil, fmt.Errorf("ошибка при запросе к бд: %s", err)
 	}
-	return &PostgresRepository{logger: logger, cfg: cfg, db: db}, nil
+	return &DBRepository{logger: logger, cfg: cfg, db: db}, nil
 }
 
-func (r *PostgresRepository) validateUniqueShortURL(ctx context.Context, tx *sqlx.Tx, shortURL string) error {
+func (r *DBRepository) validateUniqueShortURL(ctx context.Context, tx *sqlx.Tx, shortURL string) error {
 	var id int
 
 	select {
@@ -70,7 +70,7 @@ func (r *PostgresRepository) validateUniqueShortURL(ctx context.Context, tx *sql
 	return fmt.Errorf("%w: %s", ErrShortURLExists, shortURL)
 }
 
-func (r *PostgresRepository) Create(ctx context.Context, fullURL, shortURL string) (string, error) {
+func (r *DBRepository) Create(ctx context.Context, fullURL, shortURL string) (string, error) {
 	var shortRes string
 
 	select {
@@ -83,12 +83,15 @@ func (r *PostgresRepository) Create(ctx context.Context, fullURL, shortURL strin
 	if err != nil {
 		return "", err
 	}
+	defer tx.Commit()
 
 	if err := r.validateUniqueShortURL(ctx, tx, shortURL); err != nil {
+		tx.Rollback()
 		return "", err
 	}
 	res := tx.QueryRowContext(ctx, "INSERT INTO shortener (url, shorten) VALUES($1, $2) ON CONFLICT(url) DO UPDATE SET shorten = shortener.shorten RETURNING shorten", fullURL, shortURL)
 	if err := res.Scan(&shortRes); err != nil {
+		tx.Rollback()
 		return "", err
 	}
 
@@ -99,7 +102,7 @@ func (r *PostgresRepository) Create(ctx context.Context, fullURL, shortURL strin
 	return shortRes, tx.Commit()
 }
 
-func (r *PostgresRepository) BatchCreate(ctx context.Context, data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
+func (r *DBRepository) BatchCreate(ctx context.Context, data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
 	var queryData []models.BatchCreateData
 	var response []models.BatchCreateResponse
 
@@ -113,6 +116,8 @@ func (r *PostgresRepository) BatchCreate(ctx context.Context, data []models.Batc
 	if err != nil {
 		return nil, err
 	}
+
+	defer tx.Commit()
 	// генерируем список сокращенных урлов
 	for _, val := range data {
 	generator:
@@ -123,6 +128,7 @@ func (r *PostgresRepository) BatchCreate(ctx context.Context, data []models.Batc
 				if errors.Is(err, ErrShortURLExists) {
 					continue
 				}
+				tx.Rollback()
 				return nil, err
 			}
 			// проверяем, что не задублировали ссылку
@@ -139,6 +145,7 @@ func (r *PostgresRepository) BatchCreate(ctx context.Context, data []models.Batc
 	// создаем
 	rows, err := tx.NamedQuery(query, queryData)
 	if err != nil {
+		tx.Rollback()
 		r.logger.Error("ошибка при запросе к бд", zap.Error(err))
 		return nil, fmt.Errorf("ошибка при запросе к бд: %s", err)
 	}
@@ -151,21 +158,23 @@ func (r *PostgresRepository) BatchCreate(ctx context.Context, data []models.Batc
 		}
 		row.ShortURL, err = url.JoinPath(r.cfg.BaseURL, row.ShortURL)
 		if err != nil {
+			tx.Rollback()
 			r.logger.Error("ошибка при формировании ответа", zap.Error(err))
-			return nil, tx.Rollback()
+			return nil, err
 		}
 		response = append(response, row)
 	}
 
 	if err := rows.Err(); err != nil {
+		tx.Rollback()
 		r.logger.Error("ошибка при формировании ответа", zap.Error(err))
-		return nil, tx.Rollback()
+		return nil, err
 	}
 
 	return response, tx.Commit()
 }
 
-func (r *PostgresRepository) GetByShort(ctx context.Context, shortURL string) (string, error) {
+func (r *DBRepository) GetByShort(ctx context.Context, shortURL string) (string, error) {
 	var fullURL string
 	row := r.db.QueryRowContext(ctx, "SELECT url FROM shortener WHERE  shorten = $1", shortURL)
 	if err := row.Scan(&fullURL); err != nil {
@@ -178,7 +187,7 @@ func (r *PostgresRepository) GetByShort(ctx context.Context, shortURL string) (s
 	return fullURL, nil
 }
 
-func (r *PostgresRepository) Ping() error {
+func (r *DBRepository) Ping() error {
 	err := r.db.Ping()
 	if err != nil {
 		return fmt.Errorf("ошибка при запросе к бд: %s", err)
@@ -186,6 +195,6 @@ func (r *PostgresRepository) Ping() error {
 	return nil
 }
 
-func (r *PostgresRepository) Close() error {
+func (r *DBRepository) Close() error {
 	return r.db.Close()
 }

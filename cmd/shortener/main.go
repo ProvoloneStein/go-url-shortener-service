@@ -27,7 +27,7 @@ func main() {
 		log.Fatal(err)
 	}
 	if config.DatabaseDSN != "" {
-		repos, err = repositories.NewPostgresRepository(logger, config)
+		repos, err = repositories.NewDBRepository(logger, config)
 		if err != nil {
 			logger.Fatal("ошибка при иницилизации репозитория.", zap.Error(err))
 		}
