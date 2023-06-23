@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"github.com/ProvoloneStein/go-url-shortener-service/configs"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
-	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/services"
 	"go.uber.org/zap"
 	"io"
 	"net/url"
@@ -143,7 +142,7 @@ func (r *FileRepository) BatchCreate(ctx context.Context, data []models.BatchCre
 	default:
 	}
 	for _, val := range data {
-		shortID := services.RandomString()
+		shortID := RandomString()
 
 		shortURL, err := url.JoinPath(r.cfg.BaseURL, shortID)
 		if err != nil {

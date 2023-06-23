@@ -30,7 +30,7 @@ func NewService(logger *zap.Logger, cfg configs.AppConfig, repo Repository) *Ser
 
 func (s *Service) CreateShortURL(ctx context.Context, fullURL string) (string, error) {
 	for {
-		shortID := RandomString()
+		shortID := repositories.RandomString()
 		_, repoErr := s.repo.Create(ctx, fullURL, shortID)
 		if repoErr != nil {
 			if !errors.Is(repoErr, repositories.ErrorUniqueViolation) {

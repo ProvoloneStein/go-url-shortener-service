@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/ProvoloneStein/go-url-shortener-service/configs"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
-	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/services"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap"
@@ -122,7 +121,7 @@ func (r *PostgresRepository) BatchCreate(ctx context.Context, data []models.Batc
 	for _, val := range data {
 	generator:
 		for {
-			shortURL := services.RandomString()
+			shortURL := RandomString()
 			err := r.validateUniqueShortURL(ctx, tx, shortURL)
 			if err != nil {
 				if errors.Is(err, ErrShortURLExists) {

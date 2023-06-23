@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/ProvoloneStein/go-url-shortener-service/configs"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
-	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/services"
 	"go.uber.org/zap"
 	"net/url"
 )
@@ -66,7 +65,7 @@ func (r *LocalRepository) BatchCreate(ctx context.Context, data []models.BatchCr
 	}
 	for _, val := range data {
 		for {
-			shortID := services.RandomString()
+			shortID := RandomString()
 			if _, ok := r.store[shortID]; ok {
 				continue
 			}
