@@ -85,7 +85,7 @@ func (r *PostgresRepository) Create(ctx context.Context, fullURL, shortURL strin
 	}
 
 	if err := r.validateUniqueShortURL(ctx, tx, shortURL); err != nil {
-		return "", fmt.Errorf("%w: %w", tx.Rollback(), err)
+		return "", err
 	}
 	res := tx.QueryRowContext(ctx, "INSERT INTO shortener (url, shorten) VALUES($1, $2) ON CONFLICT(url) DO UPDATE SET shorten = shortener.shorten RETURNING shorten", fullURL, shortURL)
 	if err := res.Scan(&shortRes); err != nil {
@@ -114,10 +114,6 @@ func (r *PostgresRepository) BatchCreate(ctx context.Context, data []models.Batc
 		return nil, err
 	}
 	// генерируем список сокращенных урлов
-	// не могу придумать, как отделить тут генерацию урлов, если оставлять запрос в рамках одной транзакции
-	// если возвращать ошибку при валидации наверх - очень долго сервис будет работать
-	// вижу решением разделение на атомарные операции - отдельно генерирую уникальные урлы - отдельно батчу
-	// но это вроде противоречит тому, что мы обсуждали :)
 	for _, val := range data {
 	generator:
 		for {
@@ -127,7 +123,7 @@ func (r *PostgresRepository) BatchCreate(ctx context.Context, data []models.Batc
 				if errors.Is(err, ErrShortURLExists) {
 					continue
 				}
-				return nil, fmt.Errorf("%w: %w", tx.Rollback(), err)
+				return nil, err
 			}
 			// проверяем, что не задублировали ссылку
 			for _, row := range queryData {
