@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
@@ -42,7 +43,12 @@ func (h *Handler) createShortURLByJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "ошибка валидации тела запроса", http.StatusBadRequest)
 		return
 	}
-	res, err := h.services.CreateShortURL(ctx, requestBody.URL)
+	userID, err := getUserId(ctx)
+	if err != nil {
+		http.Error(w, "ошибка авторизации", http.StatusInternalServerError)
+		return
+	}
+	res, err := h.services.CreateShortURL(ctx, userID, requestBody.URL)
 	if err != nil && !errors.Is(err, repositories.ErrorUniqueViolation) {
 		h.logger.Error("ошибка при создании url", zap.Error(err))
 		http.Error(w, "неверный запрос", http.StatusBadRequest)
@@ -86,7 +92,12 @@ func (h *Handler) batchCreateURLByJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Неверное тело запрос", http.StatusBadRequest)
 		return
 	}
-	res, err := h.services.BatchCreate(ctx, requestBody)
+	userID, err := getUserId(ctx)
+	if err != nil {
+		http.Error(w, "ошибка авторизации", http.StatusInternalServerError)
+		return
+	}
+	res, err := h.services.BatchCreate(ctx, userID, requestBody)
 	if err != nil {
 		h.logger.Error("ошибка при создании urls", zap.Error(err))
 		http.Error(w, "Неверный запрос", http.StatusBadRequest)
@@ -100,6 +111,38 @@ func (h *Handler) batchCreateURLByJSON(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
+
+	if _, err = w.Write(b); err != nil {
+		h.logger.Error("ошибка при создании url", zap.Error(err))
+		return
+	}
+}
+
+func (h *Handler) getUserURLs(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	userID, err := getUserId(ctx)
+	if err != nil {
+		http.Error(w, "ошибка авторизации", http.StatusInternalServerError)
+		return
+	}
+	res, err := h.services.GetListByUser(ctx, userID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, err.Error(), http.StatusNoContent)
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		return
+	}
+
+	b, err := json.Marshal(res)
+	if err != nil {
+		h.logger.Error("ошибка при сериализации url", zap.Error(err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 
 	if _, err = w.Write(b); err != nil {
 		h.logger.Error("ошибка при создании url", zap.Error(err))
