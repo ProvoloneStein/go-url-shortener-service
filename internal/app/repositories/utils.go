@@ -1,8 +1,15 @@
 package repositories
 
-import "math/rand"
+import (
+	"errors"
+	"math/rand"
+)
 
-func randomString() string {
+var ErrorUniqueViolation = errors.New("UniqueViolationError")
+var ErrURLNotFound = errors.New("URLNotFound")
+var ErrShortURLExists = errors.New("ShortURLExists")
+
+func RandomString() string {
 	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 
 	s := make([]rune, 10)

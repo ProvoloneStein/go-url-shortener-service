@@ -26,20 +26,26 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if config.FileStorage == "" {
-		repos = repositories.NewLocalRepository()
+	if config.DatabaseDSN != "" {
+		repos, err = repositories.NewDBRepository(logger, config)
+		if err != nil {
+			logger.Fatal("ошибка при иницилизации репозитория.", zap.Error(err))
+		}
+		defer repos.Close()
+	} else if config.FileStorage == "" {
+		repos = repositories.NewLocalRepository(logger, config)
 	} else {
 		file, err := os.OpenFile(config.FileStorage, os.O_CREATE|os.O_RDWR, 0666)
 		if err != nil {
 			logger.Fatal("ошибка при попытке открытия файла", zap.Error(err))
 		}
 		defer file.Close()
-		repos, err = repositories.NewFileRepository(logger, file)
+		repos, err = repositories.NewFileRepository(config, logger, file)
 		if err != nil {
 			logger.Fatal("ошибка при иницилизации репозитория.", zap.Error(err))
 		}
 	}
-	services := services.NewService(config, repos)
+	services := services.NewService(logger, config, repos)
 	handler := handlers.NewHandler(logger, services)
 	logger.Info(fmt.Sprintf("запускается сервер по адресу %s", config.Addr))
 	if err = server.Run(config.Addr, handler.InitHandler()); err != nil {

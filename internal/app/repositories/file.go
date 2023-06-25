@@ -2,11 +2,15 @@ package repositories
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ProvoloneStein/go-url-shortener-service/configs"
+	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
 	"go.uber.org/zap"
 	"io"
+	"net/url"
 	"os"
 	"strconv"
 )
@@ -18,6 +22,7 @@ type ShorterRecord struct {
 }
 
 type FileRepository struct {
+	cfg    configs.AppConfig
 	logger *zap.Logger
 	file   *os.File
 	writer *bufio.Writer
@@ -26,9 +31,10 @@ type FileRepository struct {
 	uuid   int
 }
 
-func NewFileRepository(logger *zap.Logger, file *os.File) (*FileRepository, error) {
+func NewFileRepository(cfg configs.AppConfig, logger *zap.Logger, file *os.File) (*FileRepository, error) {
 
 	repo := FileRepository{
+		cfg:    cfg,
 		logger: logger,
 		file:   file,
 		store:  make(map[string]string),
@@ -95,24 +101,81 @@ func (r *FileRepository) WriteString(record ShorterRecord) error {
 
 }
 
-func (r *FileRepository) Create(fullURL string) (string, error) {
-	var shortURL string
-	for {
-		shortURL = randomString()
-		if _, ok := r.store[shortURL]; !ok {
-			r.store[shortURL] = fullURL
-			if err := r.WriteString(ShorterRecord{strconv.Itoa(r.uuid), shortURL, fullURL}); err != nil {
-				return "", err
-			}
-			return shortURL, nil
-		}
+func (r *FileRepository) validateUniqueShortURL(ctx context.Context, shortURL string) error {
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
 	}
+	if _, ok := r.store[shortURL]; !ok {
+		return nil
+	}
+	return ErrShortURLExists
 }
 
-func (r *FileRepository) GetByShort(shortURL string) (string, error) {
+func (r *FileRepository) Create(ctx context.Context, fullURL, shortURL string) (string, error) {
+	select {
+	case <-ctx.Done():
+		return "", ctx.Err()
+	default:
+	}
+	for key, val := range r.store {
+		if val == fullURL {
+			return key, ErrorUniqueViolation
+		}
+	}
+	r.store[shortURL] = fullURL
+	if err := r.WriteString(ShorterRecord{strconv.Itoa(r.uuid), shortURL, fullURL}); err != nil {
+		delete(r.store, shortURL)
+		return shortURL, err
+	}
+	return shortURL, nil
+}
+
+func (r *FileRepository) BatchCreate(ctx context.Context, data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
+	var response []models.BatchCreateResponse
+
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+	for _, val := range data {
+		shortID := RandomString()
+
+		shortURL, err := url.JoinPath(r.cfg.BaseURL, shortID)
+		if err != nil {
+			r.logger.Error("ошибка при формировании url", zap.Error(err))
+			return response, err
+		}
+		_, err = r.Create(ctx, val.URL, shortID)
+		if err != nil && !errors.Is(err, ErrorUniqueViolation) {
+			r.logger.Error("ошибка при записи url", zap.Error(err))
+			return response, err
+		}
+		response = append(response, models.BatchCreateResponse{ShortURL: shortURL, UUID: val.UUID})
+	}
+	return response, nil
+}
+
+func (r *FileRepository) GetByShort(ctx context.Context, shortURL string) (string, error) {
+	select {
+	case <-ctx.Done():
+		return "", ctx.Err()
+	default:
+	}
 	fullURL, ok := r.store[shortURL]
 	if ok {
 		return fullURL, nil
 	}
-	return "", errors.New("url not found")
+	return "", fmt.Errorf("%w: %s", ErrURLNotFound, shortURL)
+}
+
+func (r *FileRepository) Ping() error {
+	return nil
+}
+
+func (r *FileRepository) Close() error {
+	return nil
 }
