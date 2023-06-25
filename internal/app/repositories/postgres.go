@@ -185,16 +185,16 @@ func (r *DBRepository) GetListByUser(ctx context.Context, userID string) ([]mode
 	default:
 	}
 	query := "SELECT url, shorten FROM shortener WHERE user_id LIKE $1"
-	rows, err := r.db.QueryContext(ctx, query, userID)
+	rows, err := r.db.QueryxContext(ctx, query, userID)
 	if err != nil {
 		r.logger.Error("ошибка при запросе к бд", zap.Error(err))
 		return nil, fmt.Errorf("ошибка при запросе к бд: %s", err)
 	}
 	defer rows.Close()
-	// обрабатываем ответ
+	//обрабатываем ответ
 	for rows.Next() {
 		var row = models.GetURLResponse{}
-		if err := rows.Scan(&row.URL, &row.ShortURL); err != nil {
+		if err := rows.StructScan(&row); err != nil {
 			return nil, err
 		}
 		row.ShortURL, err = url.JoinPath(r.cfg.BaseURL, row.ShortURL)
@@ -207,6 +207,9 @@ func (r *DBRepository) GetListByUser(ctx context.Context, userID string) ([]mode
 	if err := rows.Err(); err != nil {
 		r.logger.Error("ошибка при формировании ответа", zap.Error(err))
 		return nil, err
+	}
+	if response == nil {
+		return nil, sql.ErrNoRows
 	}
 	return response, nil
 }

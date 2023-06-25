@@ -25,7 +25,7 @@ func (h *Handler) createShortURL(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Ошибка при чтении тела запроса", http.StatusBadRequest)
 		return
 	}
-	userID, err := getUserId(ctx)
+	userID, err := getUserID(ctx)
 	if err != nil {
 		http.Error(w, "ошибка авторизации", http.StatusInternalServerError)
 		return
@@ -52,7 +52,7 @@ func (h *Handler) createShortURL(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) getByShort(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	shortURL := chi.URLParam(r, "id")
-	userID, err := getUserId(ctx)
+	userID, err := getUserID(ctx)
 	if err != nil {
 		http.Error(w, "ошибка авторизации", http.StatusInternalServerError)
 		return

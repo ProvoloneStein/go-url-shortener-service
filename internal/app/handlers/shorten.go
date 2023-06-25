@@ -43,7 +43,7 @@ func (h *Handler) createShortURLByJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "ошибка валидации тела запроса", http.StatusBadRequest)
 		return
 	}
-	userID, err := getUserId(ctx)
+	userID, err := getUserID(ctx)
 	if err != nil {
 		http.Error(w, "ошибка авторизации", http.StatusInternalServerError)
 		return
@@ -92,7 +92,7 @@ func (h *Handler) batchCreateURLByJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Неверное тело запрос", http.StatusBadRequest)
 		return
 	}
-	userID, err := getUserId(ctx)
+	userID, err := getUserID(ctx)
 	if err != nil {
 		http.Error(w, "ошибка авторизации", http.StatusInternalServerError)
 		return
@@ -120,7 +120,7 @@ func (h *Handler) batchCreateURLByJSON(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) getUserURLs(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	userID, err := getUserId(ctx)
+	userID, err := getUserID(ctx)
 	if err != nil {
 		http.Error(w, "ошибка авторизации", http.StatusInternalServerError)
 		return
