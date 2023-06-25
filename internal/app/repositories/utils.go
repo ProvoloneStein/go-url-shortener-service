@@ -8,6 +8,7 @@ import (
 var ErrorUniqueViolation = errors.New("UniqueViolationError")
 var ErrURLNotFound = errors.New("URLNotFound")
 var ErrShortURLExists = errors.New("ShortURLExists")
+var ErrUserExists = errors.New("UserExists")
 
 func RandomString() string {
 	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")

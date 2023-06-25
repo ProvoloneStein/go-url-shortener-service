@@ -2,10 +2,17 @@ package handlers
 
 import (
 	"compress/gzip"
+	"context"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
 	"strings"
+)
+
+type userCtxKey string
+
+const (
+	userCtx = userCtxKey("userId")
 )
 
 type gzipWriter struct {
@@ -69,6 +76,31 @@ func gzipReadWriterHandler(logger *zap.Logger) func(http.Handler) http.Handler {
 				return
 			}
 			next.ServeHTTP(wr, r)
+		})
+	}
+}
+
+func userIdentity(services Service, logger *zap.Logger) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			cookie, err := r.Cookie("authToken")
+			if err != nil {
+				val, err := services.GenerateToken(r.Context())
+				if err != nil {
+					logger.Error("ошибка при генерации токена", zap.Error(err))
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+				cookie = &http.Cookie{Name: "authToken", Value: val}
+				http.SetCookie(w, cookie)
+			}
+			userID, err := services.ParseToken(cookie.Value)
+			if err != nil {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+			ctxuser := context.WithValue(r.Context(), userCtx, userID)
+			next.ServeHTTP(w, r.WithContext(ctxuser))
 		})
 	}
 }
