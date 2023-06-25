@@ -204,6 +204,10 @@ func (r *DBRepository) GetListByUser(ctx context.Context, userID string) ([]mode
 		}
 		response = append(response, row)
 	}
+	if err := rows.Err(); err != nil {
+		r.logger.Error("ошибка при формировании ответа", zap.Error(err))
+		return nil, err
+	}
 	return response, nil
 }
 

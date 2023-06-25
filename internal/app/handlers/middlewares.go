@@ -9,8 +9,10 @@ import (
 	"strings"
 )
 
+type userCtxKey string
+
 const (
-	userCtx = "userId"
+	userCtx = userCtxKey("userId")
 )
 
 type gzipWriter struct {

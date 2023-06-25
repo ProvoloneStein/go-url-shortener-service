@@ -211,7 +211,7 @@ func (r *FileRepository) ValidateUniqueUser(ctx context.Context, userID string) 
 	}
 	for _, val := range r.store {
 		if val[1] == userID {
-			fmt.Errorf("%w: %s", ErrUserExists, userID)
+			return fmt.Errorf("%w: %s", ErrUserExists, userID)
 		}
 	}
 	return nil

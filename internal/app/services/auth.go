@@ -15,13 +15,20 @@ const (
 
 type tokenClaims struct {
 	jwt.RegisteredClaims
-	UserId string `json:"user_id"`
+	UserID string `json:"user_id"`
 }
 
 func (s *Service) GenerateToken(ctx context.Context) (string, error) {
-	userID := repositories.RandomString()
-	if err := s.repo.ValidateUniqueUser(ctx, userID); err != nil {
-		return "", err
+	var userID string
+	for {
+		userID = repositories.RandomString()
+		if err := s.repo.ValidateUniqueUser(ctx, userID); err != nil {
+			if !errors.Is(err, repositories.ErrUserExists) {
+				return "", err
+			}
+		} else {
+			break
+		}
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &tokenClaims{
 		jwt.RegisteredClaims{
@@ -38,14 +45,13 @@ func (s *Service) ParseToken(accessToken string) (string, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("invalid signing method")
 		}
-
 		return []byte(signingKey), nil
 	})
 	if err != nil {
 		return "", err
 	}
 	if !token.Valid {
-		return "", errors.New("Token is not valid")
+		return "", errors.New("token is not valid")
 	}
 
 	claims, ok := token.Claims.(*tokenClaims)
@@ -53,5 +59,5 @@ func (s *Service) ParseToken(accessToken string) (string, error) {
 		return "", errors.New("token claims are not of type *tokenClaims")
 	}
 
-	return claims.UserId, nil
+	return claims.UserID, nil
 }

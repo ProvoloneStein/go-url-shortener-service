@@ -54,7 +54,7 @@ func (s *Service) BatchCreate(ctx context.Context, userID string, data []models.
 	var queryData []models.BatchCreateData
 	var res []models.BatchCreateResponse
 
-	for dataIndex, _ := range data {
+	for dataIndex := range data {
 		shortID := repositories.RandomString()
 		queryData = append(queryData, models.BatchCreateData{ShortURL: shortID, URL: data[dataIndex].URL, UUID: data[dataIndex].UUID, UserID: userID})
 	}
@@ -66,7 +66,7 @@ generator:
 			// проверяем что не задублировали shortID
 			for queryIndex := range queryData {
 				if shortID == queryData[queryIndex].ShortURL {
-					res = append(res[resIndex:])
+					res = res[resIndex:]
 					continue generator
 				}
 			}

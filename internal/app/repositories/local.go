@@ -69,20 +69,17 @@ func (r *LocalRepository) BatchCreate(ctx context.Context, data []models.BatchCr
 		}
 	}
 	for _, val := range data {
-		for {
-			shortURL, err := url.JoinPath(r.cfg.BaseURL, val.ShortURL)
-			if err != nil {
-				r.logger.Error("ошибка при формировании url", zap.Error(err))
-				return response, err
-			}
-			_, err = r.Create(ctx, val.UserID, val.URL, val.ShortURL)
-			if err != nil && !errors.Is(err, ErrorUniqueViolation) {
-				r.logger.Error("ошибка при записи url", zap.Error(err))
-				return response, err
-			}
-			response = append(response, models.BatchCreateResponse{ShortURL: shortURL, UUID: val.UUID})
-			break
+		shortURL, err := url.JoinPath(r.cfg.BaseURL, val.ShortURL)
+		if err != nil {
+			r.logger.Error("ошибка при формировании url", zap.Error(err))
+			return response, err
 		}
+		_, err = r.Create(ctx, val.UserID, val.URL, val.ShortURL)
+		if err != nil && !errors.Is(err, ErrorUniqueViolation) {
+			r.logger.Error("ошибка при записи url", zap.Error(err))
+			return response, err
+		}
+		response = append(response, models.BatchCreateResponse{ShortURL: shortURL, UUID: val.UUID})
 	}
 	return response, nil
 }
@@ -132,7 +129,7 @@ func (r *LocalRepository) ValidateUniqueUser(ctx context.Context, userID string)
 	}
 	for _, val := range r.store {
 		if val[1] == userID {
-			fmt.Errorf("%w: %s", ErrUserExists, userID)
+			return fmt.Errorf("%w: %s", ErrUserExists, userID)
 		}
 	}
 	return nil
