@@ -176,5 +176,4 @@ func (h *Handler) deleteUserURLsBatch(w http.ResponseWriter, r *http.Request) {
 	go h.services.DeleteUserURLsBatch(context.Background(), userID, reqBody)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
-
 }

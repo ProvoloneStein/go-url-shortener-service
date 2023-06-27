@@ -27,7 +27,6 @@ func NewLocalRepository(logger *zap.Logger, cfg configs.AppConfig) *LocalReposit
 }
 
 func (r *LocalRepository) validateUniqueShortURL(ctx context.Context, shortURL string) error {
-
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -126,7 +125,6 @@ func (r *LocalRepository) GetListByUser(ctx context.Context, userID string) ([]m
 }
 
 func (r *LocalRepository) ValidateUniqueUser(ctx context.Context, userID string) error {
-
 	select {
 	case <-ctx.Done():
 		return ctx.Err()

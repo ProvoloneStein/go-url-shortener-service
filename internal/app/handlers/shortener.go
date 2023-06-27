@@ -58,7 +58,6 @@ func (h *Handler) getByShort(w http.ResponseWriter, r *http.Request) {
 	}
 	res, err := h.services.GetFullByID(ctx, shortURL)
 	if err != nil {
-
 		if errors.Is(err, repositories.ErrURLNotFound) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 		} else if errors.Is(err, repositories.ErrDeleted) {

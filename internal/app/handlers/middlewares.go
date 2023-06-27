@@ -36,7 +36,7 @@ func gzipRead(r *http.Request) error {
 				// меняем тело запроса на новое
 				r.Body = cr
 				defer cr.Close()
-				//избегаем повторения операции
+				// избегаем повторения операции
 				return nil
 			}
 		}

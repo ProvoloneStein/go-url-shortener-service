@@ -9,7 +9,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-	
+
 	"github.com/go-chi/chi/v5"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -19,7 +19,6 @@ import (
 )
 
 func TestHandler_createShortURL(t *testing.T) {
-
 	// Init Test Table
 	type mockBehavior func(r *mock_handlers.MockService, fullURL string)
 
@@ -91,7 +90,6 @@ func TestHandler_createShortURL(t *testing.T) {
 }
 
 func TestHandler_getByShort(t *testing.T) {
-
 	// Init Test Table
 	type mockBehavior func(r *mock_handlers.MockService, shortURL string)
 
