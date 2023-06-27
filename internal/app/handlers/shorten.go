@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -170,7 +171,7 @@ func (h *Handler) deleteUserURLsBatch(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Неверное тело запрос", http.StatusBadRequest)
 		return
 	}
-	go h.services.DeleteUserURLsBatch(ctx, userID, reqBody)
+	go h.services.DeleteUserURLsBatch(context.Background(), userID, reqBody)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
 
