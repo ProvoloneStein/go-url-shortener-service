@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/repositories"
 	"github.com/asaskevich/govalidator"
@@ -148,4 +149,31 @@ func (h *Handler) getUserURLs(w http.ResponseWriter, r *http.Request) {
 		h.logger.Error("ошибка при создании url", zap.Error(err))
 		return
 	}
+}
+
+func (h *Handler) deleteUserURLsBatch(w http.ResponseWriter, r *http.Request) {
+	var reqBody []string
+
+	ctx := r.Context()
+	userID, err := getUserID(ctx)
+	if err != nil {
+		http.Error(w, "ошибка авторизации", http.StatusInternalServerError)
+		return
+	}
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Ошибка при чтении тела запроса", http.StatusBadRequest)
+		return
+	}
+	if err := json.Unmarshal(body, &reqBody); err != nil {
+		http.Error(w, "Неверное тело запрос", http.StatusBadRequest)
+		return
+	}
+	err = h.services.DeleteUserURLsBatch(ctx, userID, reqBody)
+	if err != nil {
+		h.logger.Error(fmt.Sprintf("error while DeleteURLBatch: %s", err.Error()))
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusAccepted)
+
 }

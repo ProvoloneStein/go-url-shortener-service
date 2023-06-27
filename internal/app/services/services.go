@@ -15,6 +15,7 @@ type Repository interface {
 	BatchCreate(ctx context.Context, data []models.BatchCreateData) ([]models.BatchCreateResponse, error)
 	GetByShort(ctx context.Context, shortURL string) (string, error)
 	GetListByUser(ctx context.Context, userID string) ([]models.GetURLResponse, error)
+	DeleteUserURLsBatch(ctx context.Context, userID string, data []string) error
 	ValidateUniqueUser(ctx context.Context, userID string) error
 	Ping() error
 	Close() error
@@ -94,6 +95,10 @@ func (s *Service) GetFullByID(ctx context.Context, userID, shortURL string) (str
 
 func (s *Service) GetListByUser(ctx context.Context, userID string) ([]models.GetURLResponse, error) {
 	return s.repo.GetListByUser(ctx, userID)
+}
+
+func (s *Service) DeleteUserURLsBatch(ctx context.Context, userID string, data []string) error {
+	return s.repo.DeleteUserURLsBatch(ctx, userID, data)
 }
 
 func (s *Service) Ping() error {

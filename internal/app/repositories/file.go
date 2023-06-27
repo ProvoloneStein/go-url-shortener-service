@@ -20,6 +20,7 @@ type ShorterRecord struct {
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
 	UserID      string `json:"user_id"`
+	Deleted     string `json:"deleted"`
 }
 
 type FileRepository struct {
@@ -28,7 +29,7 @@ type FileRepository struct {
 	file   *os.File
 	writer *bufio.Writer
 	reader *bufio.Reader
-	store  map[string][]string
+	store  map[string][3]string
 	uuid   int
 }
 
@@ -38,7 +39,7 @@ func NewFileRepository(cfg configs.AppConfig, logger *zap.Logger, file *os.File)
 		cfg:    cfg,
 		logger: logger,
 		file:   file,
-		store:  make(map[string][]string),
+		store:  make(map[string][3]string),
 		writer: bufio.NewWriter(file),
 		reader: bufio.NewReader(file),
 		uuid:   0,
@@ -52,7 +53,7 @@ func NewFileRepository(cfg configs.AppConfig, logger *zap.Logger, file *os.File)
 		if record == nil {
 			break
 		}
-		repo.store[record.ShortURL] = []string{record.OriginalURL, record.UserID}
+		repo.store[record.ShortURL] = [3]string{record.OriginalURL, record.UserID, record.Deleted}
 		repo.uuid, err = strconv.Atoi(record.UUID)
 		if err != nil {
 			return nil, fmt.Errorf("ошибка при получения uuid записи: %s", err)
@@ -129,8 +130,8 @@ func (r *FileRepository) Create(ctx context.Context, userID, fullURL, shortURL s
 			return key, ErrorUniqueViolation
 		}
 	}
-	r.store[shortURL] = []string{fullURL, userID}
-	if err := r.WriteString(ShorterRecord{strconv.Itoa(r.uuid), shortURL, fullURL, userID}); err != nil {
+	r.store[shortURL] = [3]string{fullURL, userID, "f"}
+	if err := r.WriteString(ShorterRecord{strconv.Itoa(r.uuid), shortURL, fullURL, userID, "f"}); err != nil {
 		delete(r.store, shortURL)
 		return shortURL, err
 	}
@@ -174,6 +175,9 @@ func (r *FileRepository) GetByShort(ctx context.Context, shortURL string) (strin
 	}
 	data, ok := r.store[shortURL]
 	if ok {
+		if data[2] == "t" {
+			return "", ErrDeleted
+		}
 		return data[0], nil
 	}
 	return "", fmt.Errorf("%w: %s", ErrURLNotFound, shortURL)
@@ -195,11 +199,29 @@ func (r *FileRepository) GetListByUser(ctx context.Context, userID string) ([]mo
 	default:
 	}
 	for key, val := range r.store {
-		if userID == val[1] {
+		if userID == val[1] && val[2] == "f" {
 			result = append(result, models.GetURLResponse{ShortURL: key, URL: val[0]})
 		}
 	}
 	return result, nil
+}
+
+func (r *FileRepository) DeleteUserURLsBatch(ctx context.Context, userID string, data []string) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+	for _, short := range data {
+		row, ok := r.store[short]
+		if ok {
+			if row[1] == userID {
+				row[2] = "t"
+			}
+			//todo исправить в файле
+		}
+	}
+	return nil
 }
 
 func (r *FileRepository) ValidateUniqueUser(ctx context.Context, userID string) error {

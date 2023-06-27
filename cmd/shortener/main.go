@@ -1,19 +1,20 @@
 package main
 
 import (
-	"fmt"
 	"github.com/ProvoloneStein/go-url-shortener-service/configs"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/handlers"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/repositories"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/server"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/services"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/logger"
-	"go.uber.org/zap"
-	"os"
 )
 
+import "go.uber.org/zap"
+
 import (
+	"fmt"
 	"log"
+	"os"
 )
 
 func main() {

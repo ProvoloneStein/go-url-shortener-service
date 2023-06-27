@@ -21,7 +21,7 @@ type DBRepository struct {
 
 func initPG(db *sqlx.DB) error {
 	_, err := db.Exec("CREATE TABLE IF NOT EXISTS shortener " +
-		"(id BIGSERIAL PRIMARY KEY, user_id VARCHAR(256), url VARCHAR(256) UNIQUE NOT NULL, shorten VARCHAR(256) UNIQUE NOT NULL, correlation_id VARCHAR(256))")
+		"(id BIGSERIAL PRIMARY KEY, user_id VARCHAR(256), url VARCHAR(256) UNIQUE NOT NULL, shorten VARCHAR(256) UNIQUE NOT NULL, correlation_id VARCHAR(256), deleted BOOLEAN DEFAULT FALSE)")
 	if err != nil {
 		return fmt.Errorf("ошибка при создании базы данных: %s", err)
 	}
@@ -152,6 +152,19 @@ func (r *DBRepository) BatchCreate(ctx context.Context, data []models.BatchCreat
 	return response, tx.Commit()
 }
 
+func (r *DBRepository) BatchDelete(ctx context.Context, shortURL string) (string, error) {
+	var fullURL string
+	row := r.db.QueryRowContext(ctx, "SELECT url FROM shortener WHERE  shorten = $1", shortURL)
+	if err := row.Scan(&fullURL); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", fmt.Errorf("%w: %s", ErrURLNotFound, shortURL)
+		}
+		r.logger.Error("ошибка при формировании ответа", zap.Error(err))
+		return "", fmt.Errorf("ошибка при формировании ответа: %s", err)
+	}
+	return fullURL, nil
+}
+
 func (r *DBRepository) GetByShort(ctx context.Context, shortURL string) (string, error) {
 	var fullURL string
 	row := r.db.QueryRowContext(ctx, "SELECT url FROM shortener WHERE  shorten = $1", shortURL)
@@ -175,6 +188,21 @@ func (r *DBRepository) Ping() error {
 
 func (r *DBRepository) Close() error {
 	return r.db.Close()
+}
+
+func (r *DBRepository) DeleteUserURLsBatch(ctx context.Context, userID string, data []string) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+	query := "update shortener set deleted = True WHERE user_id = $1 and shorten in $2"
+	_, err := r.db.ExecContext(ctx, query, userID, data)
+	if err != nil {
+		r.logger.Error("ошибка при запросе к бд", zap.Error(err))
+		return fmt.Errorf("ошибка при запросе к бд: %s", err)
+	}
+	return nil
 }
 
 func (r *DBRepository) GetListByUser(ctx context.Context, userID string) ([]models.GetURLResponse, error) {

@@ -7,6 +7,7 @@ import (
 
 var ErrorUniqueViolation = errors.New("UniqueViolationError")
 var ErrURLNotFound = errors.New("URLNotFound")
+var ErrDeleted = errors.New("DeletedUrl")
 var ErrShortURLExists = errors.New("ShortURLExists")
 var ErrUserExists = errors.New("UserExists")
 

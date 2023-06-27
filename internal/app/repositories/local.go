@@ -13,14 +13,14 @@ import (
 type LocalRepository struct {
 	logger *zap.Logger
 	cfg    configs.AppConfig
-	store  map[string][]string
+	store  map[string][3]string
 }
 
 func NewLocalRepository(logger *zap.Logger, cfg configs.AppConfig) *LocalRepository {
 	return &LocalRepository{
 		logger: logger,
 		cfg:    cfg,
-		store:  make(map[string][]string),
+		store:  make(map[string][3]string),
 	}
 }
 
@@ -51,7 +51,7 @@ func (r *LocalRepository) Create(ctx context.Context, userID, fullURL, shortURL 
 			return key, ErrorUniqueViolation
 		}
 	}
-	r.store[shortURL] = []string{fullURL, userID}
+	r.store[shortURL] = [3]string{fullURL, userID, "f"}
 	return shortURL, nil
 }
 
@@ -92,6 +92,9 @@ func (r *LocalRepository) GetByShort(ctx context.Context, shortURL string) (stri
 	}
 	data, ok := r.store[shortURL]
 	if ok {
+		if data[2] == "t" {
+			return "", ErrDeleted
+		}
 		return data[0], nil
 	}
 	return "", fmt.Errorf("%w: %s", ErrURLNotFound, shortURL)
@@ -113,7 +116,7 @@ func (r *LocalRepository) GetListByUser(ctx context.Context, userID string) ([]m
 	default:
 	}
 	for key, val := range r.store {
-		if userID == val[1] {
+		if userID == val[1] && val[2] == "f" {
 			result = append(result, models.GetURLResponse{ShortURL: key, URL: val[0]})
 		}
 	}
@@ -130,6 +133,23 @@ func (r *LocalRepository) ValidateUniqueUser(ctx context.Context, userID string)
 	for _, val := range r.store {
 		if val[1] == userID {
 			return fmt.Errorf("%w: %s", ErrUserExists, userID)
+		}
+	}
+	return nil
+}
+
+func (r *LocalRepository) DeleteUserURLsBatch(ctx context.Context, userID string, data []string) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+	for _, short := range data {
+		row, ok := r.store[short]
+		if ok {
+			if row[1] == userID {
+				row[2] = "t"
+			}
 		}
 	}
 	return nil
