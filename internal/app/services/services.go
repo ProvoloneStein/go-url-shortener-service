@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/url"
 
 	"go.uber.org/zap"
@@ -43,24 +44,29 @@ func (s *Service) CreateShortURL(ctx context.Context, userID, fullURL string) (s
 				continue
 			}
 			if !errors.Is(repoErr, repositories.ErrorUniqueViolation) {
-				return "", repoErr
+				return "", fmt.Errorf("service: %w", repoErr)
 			}
 		}
 		shortURL, err := url.JoinPath(s.cfg.BaseURL, shortID)
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("service: %w", err)
 		}
-		return shortURL, repoErr
+		if repoErr != nil {
+			return "", fmt.Errorf("service: %w", repoErr)
+		}
+		return shortURL, nil
 	}
 }
 
-func (s *Service) BatchCreate(ctx context.Context, userID string, data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
-	var queryData []models.BatchCreateData
+func (s *Service) BatchCreate(ctx context.Context, userID string,
+	data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
 	var res []models.BatchCreateResponse
 
+	queryData := make([]models.BatchCreateData, 0, len(data))
 	for dataIndex := range data {
 		shortID := repositories.RandomString()
-		queryData = append(queryData, models.BatchCreateData{ShortURL: shortID, URL: data[dataIndex].URL, UUID: data[dataIndex].UUID, UserID: userID})
+		obj := models.BatchCreateData{ShortURL: shortID, URL: data[dataIndex].URL, UUID: data[dataIndex].UUID, UserID: userID}
+		queryData = append(queryData, obj)
 	}
 
 generator:
@@ -85,18 +91,26 @@ generator:
 			if errors.Is(err, repositories.ErrShortURLExists) {
 				continue
 			}
-			return nil, err
+			return nil, fmt.Errorf("service: %w", err)
 		}
-		return res, err
+		return res, nil
 	}
 }
 
 func (s *Service) GetFullByID(ctx context.Context, shortURL string) (string, error) {
-	return s.repo.GetByShort(ctx, shortURL)
+	row, err := s.repo.GetByShort(ctx, shortURL)
+	if err != nil {
+		return row, fmt.Errorf("service: %w", err)
+	}
+	return row, nil
 }
 
 func (s *Service) GetListByUser(ctx context.Context, userID string) ([]models.GetURLResponse, error) {
-	return s.repo.GetListByUser(ctx, userID)
+	list, err := s.repo.GetListByUser(ctx, userID)
+	if err != nil {
+		return list, fmt.Errorf("service: %w", err)
+	}
+	return list, nil
 }
 
 func (s *Service) DeleteUserURLsBatch(ctx context.Context, userID string, data []string) {
@@ -106,5 +120,8 @@ func (s *Service) DeleteUserURLsBatch(ctx context.Context, userID string, data [
 }
 
 func (s *Service) Ping() error {
-	return s.repo.Ping()
+	if err := s.repo.Ping(); err != nil {
+		return fmt.Errorf("service: %w", err)
+	}
+	return nil
 }

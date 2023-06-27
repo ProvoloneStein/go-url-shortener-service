@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/repositories"
@@ -26,7 +27,7 @@ func (s *Service) GenerateToken(ctx context.Context) (string, error) {
 		userID = repositories.RandomString()
 		if err := s.repo.ValidateUniqueUser(ctx, userID); err != nil {
 			if !errors.Is(err, repositories.ErrUserExists) {
-				return "", err
+				return "", fmt.Errorf("service: %w", err)
 			}
 		} else {
 			break
@@ -39,26 +40,31 @@ func (s *Service) GenerateToken(ctx context.Context) (string, error) {
 		userID,
 	})
 
-	return token.SignedString([]byte(signingKey))
+	signedString, err := token.SignedString([]byte(signingKey))
+	if err != nil {
+		return "", fmt.Errorf("service: %w", err)
+	}
+
+	return signedString, nil
 }
 
 func (s *Service) ParseToken(accessToken string) (string, error) {
 	token, err := jwt.ParseWithClaims(accessToken, &tokenClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, errors.New("invalid signing method")
+			return nil, errors.New("service: invalid signing method")
 		}
 		return []byte(signingKey), nil
 	})
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("service: %w", err)
 	}
 	if !token.Valid {
-		return "", errors.New("token is not valid")
+		return "", errors.New("service: token is not valid")
 	}
 
 	claims, ok := token.Claims.(*tokenClaims)
 	if !ok {
-		return "", errors.New("token claims are not of type *tokenClaims")
+		return "", errors.New("service: token claims are not of type *tokenClaims")
 	}
 
 	return claims.UserID, nil
