@@ -147,7 +147,7 @@ func (r *FileRepository) BatchCreate(ctx context.Context, data []models.BatchCre
 	}
 	for _, val := range data {
 		if err := r.validateUniqueShortURL(ctx, val.ShortURL); err != nil {
-			return []models.BatchCreateResponse{models.BatchCreateResponse{ShortURL: val.ShortURL, UUID: val.UUID}}, fmt.Errorf("Repository: %w", err)
+			return []models.BatchCreateResponse{models.BatchCreateResponse{ShortURL: val.ShortURL, UUID: val.UUID}}, fmt.Errorf("repository: %w", err)
 		}
 	}
 	for _, val := range data {

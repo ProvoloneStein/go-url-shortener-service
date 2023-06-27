@@ -12,7 +12,7 @@ func Initialize(level string) (*zap.Logger, error) {
 	// Преобразуем текстовый уровень логирования в zap.AtomicLevel
 	lvl, err := zap.ParseAtomicLevel(level)
 	if err != nil {
-		return zl, fmt.Errorf("Logger: Ошибка при иницизилации логгера: %w", err)
+		return zl, fmt.Errorf("logger: Ошибка при иницизилации логгера: %w", err)
 	}
 	// Создаём новую конфигурацию логера
 	cfg := zap.NewProductionConfig()
@@ -21,7 +21,7 @@ func Initialize(level string) (*zap.Logger, error) {
 	// Создаём логер на основе конфигурации
 	zl, err = cfg.Build()
 	if err != nil {
-		return zl, fmt.Errorf("Logger: Ошибка при иницизилации логгера: %w", err)
+		return zl, fmt.Errorf("logger: Ошибка при иницизилации логгера: %w", err)
 	}
 	return zl, nil
 }
