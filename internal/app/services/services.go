@@ -52,7 +52,7 @@ func (s *Service) CreateShortURL(ctx context.Context, userID, fullURL string) (s
 			return "", fmt.Errorf("service: %w", err)
 		}
 		if repoErr != nil {
-			return "", fmt.Errorf("service: %w", repoErr)
+			return shortURL, fmt.Errorf("service: %w", repoErr)
 		}
 		return shortURL, nil
 	}
