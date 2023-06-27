@@ -11,6 +11,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap"
 	"net/url"
+	"strings"
 )
 
 type DBRepository struct {
@@ -196,8 +197,8 @@ func (r *DBRepository) DeleteUserURLsBatch(ctx context.Context, userID string, d
 		return ctx.Err()
 	default:
 	}
-	query := "update shortener set deleted = True WHERE user_id = $1 and shorten in $2"
-	_, err := r.db.ExecContext(ctx, query, userID, data)
+	query := "update shortener set deleted = True WHERE user_id = $1 and shorten in ($2)"
+	_, err := r.db.ExecContext(ctx, query, userID, strings.Join(data, ","))
 	if err != nil {
 		r.logger.Error("ошибка при запросе к бд", zap.Error(err))
 		return fmt.Errorf("ошибка при запросе к бд: %s", err)
