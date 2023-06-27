@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/ProvoloneStein/go-url-shortener-service/configs"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/repositories"
@@ -22,15 +23,15 @@ type Repository interface {
 }
 
 type Service struct {
-	logger *zap.Logger
-	cfg    configs.AppConfig
-	repo   Repository
-	//deleteChan chan map[string][]string
+	logger     *zap.Logger
+	cfg        configs.AppConfig
+	repo       Repository
+	deleteChan chan map[string][]string
 }
 
 func NewService(logger *zap.Logger, cfg configs.AppConfig, repo Repository) *Service {
-	service := Service{logger: logger, cfg: cfg, repo: repo}
-	//go service.deleteUserURLsBatchConsumer()
+	service := Service{logger: logger, cfg: cfg, repo: repo, deleteChan: make(chan map[string][]string)}
+	go service.deleteUserURLsBatchConsumer()
 	return &service
 }
 
@@ -105,25 +106,21 @@ func (s *Service) DeleteUserURLsBatch(ctx context.Context, userID string, data [
 	}
 }
 
-//func (s *Service) DeleteUserURLsBatchSender(userID string, data []byte) {
-//	var reqBody []string
-//	if err := json.Unmarshal(data, &reqBody); err != nil {
-//		s.logger.Error("ошибка при сериализации", zap.Error(err))
-//		return
-//	}
-//	val := make(map[string][]string)
-//	val[userID] = reqBody
-//	s.deleteChan <- val
-//}
+func (s *Service) DeleteUserURLsBatchSender(userID string, data []string) {
+	val := make(map[string][]string)
+	val[userID] = data
+	s.deleteChan <- val
+}
 
-//func (s *Service) deleteUserURLsBatchConsumer() {
-//	x := <-s.deleteChan
-//	for key, val := range x {
-//		if err := s.repo.DeleteUserURLsBatch(context.Background(), key, val); err != nil {
-//			s.logger.Error("ошибка при удалении", zap.Error(err))
-//		}
-//	}
-//}
+func (s *Service) deleteUserURLsBatchConsumer() {
+	x := <-s.deleteChan
+	for key, val := range x {
+		fmt.Println(key, val)
+		if err := s.repo.DeleteUserURLsBatch(context.Background(), key, val); err != nil {
+			s.logger.Error("ошибка при удалении", zap.Error(err))
+		}
+	}
+}
 
 func (s *Service) Ping() error {
 	return s.repo.Ping()
