@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -153,7 +154,7 @@ func (h *Handler) getUserURLs(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) deleteUserURLsBatch(w http.ResponseWriter, r *http.Request) {
-	//var reqBody []string
+	var reqBody []string
 
 	ctx := r.Context()
 	userID, err := getUserID(ctx)
@@ -166,12 +167,12 @@ func (h *Handler) deleteUserURLsBatch(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Ошибка при чтении тела запроса", http.StatusBadRequest)
 		return
 	}
-	go h.services.DeleteUserURLsBatchSender(userID, body)
-	//if err := json.Unmarshal(body, &reqBody); err != nil {
-	//	http.Error(w, "Неверное тело запрос", http.StatusBadRequest)
-	//	return
-	//}
-	//go h.services.DeleteUserURLsBatch(context.Background(), userID, reqBody)
+	//go h.services.DeleteUserURLsBatchSender(userID, body)
+	if err := json.Unmarshal(body, &reqBody); err != nil {
+		http.Error(w, "Неверное тело запрос", http.StatusBadRequest)
+		return
+	}
+	go h.services.DeleteUserURLsBatch(context.Background(), userID, reqBody)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
 

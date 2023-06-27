@@ -77,18 +77,6 @@ func (mr *MockServiceMockRecorder) DeleteUserURLsBatch(ctx, userID, data interfa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUserURLsBatch", reflect.TypeOf((*MockService)(nil).DeleteUserURLsBatch), ctx, userID, data)
 }
 
-// DeleteUserURLsBatchSender mocks base method.
-func (m *MockService) DeleteUserURLsBatchSender(userID string, data []byte) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "DeleteUserURLsBatchSender", userID, data)
-}
-
-// DeleteUserURLsBatchSender indicates an expected call of DeleteUserURLsBatchSender.
-func (mr *MockServiceMockRecorder) DeleteUserURLsBatchSender(userID, data interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUserURLsBatchSender", reflect.TypeOf((*MockService)(nil).DeleteUserURLsBatchSender), userID, data)
-}
-
 // GenerateToken mocks base method.
 func (m *MockService) GenerateToken(ctx context.Context) (string, error) {
 	m.ctrl.T.Helper()
