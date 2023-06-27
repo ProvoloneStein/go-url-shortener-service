@@ -130,6 +130,8 @@ func (h *Handler) getUserURLs(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, err.Error(), http.StatusNoContent)
+		} else if errors.Is(err, repositories.ErrDeleted) {
+			http.Error(w, err.Error(), http.StatusGone)
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
 		}

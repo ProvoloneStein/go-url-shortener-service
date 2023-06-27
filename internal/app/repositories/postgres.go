@@ -168,13 +168,17 @@ func (r *DBRepository) BatchDelete(ctx context.Context, shortURL string) (string
 
 func (r *DBRepository) GetByShort(ctx context.Context, shortURL string) (string, error) {
 	var fullURL string
-	row := r.db.QueryRowContext(ctx, "SELECT url FROM shortener WHERE  shorten = $1", shortURL)
-	if err := row.Scan(&fullURL); err != nil {
+	var deleted bool
+	row := r.db.QueryRowContext(ctx, "SELECT url, deleted FROM shortener WHERE  shorten = $1", shortURL)
+	if err := row.Scan(&fullURL, &deleted); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return "", fmt.Errorf("%w: %s", ErrURLNotFound, shortURL)
 		}
 		r.logger.Error("ошибка при формировании ответа", zap.Error(err))
 		return "", fmt.Errorf("ошибка при формировании ответа: %s", err)
+	}
+	if deleted {
+		return "", ErrDeleted
 	}
 	return fullURL, nil
 }
@@ -213,7 +217,7 @@ func (r *DBRepository) GetListByUser(ctx context.Context, userID string) ([]mode
 		return nil, ctx.Err()
 	default:
 	}
-	query := "SELECT url, shorten FROM shortener WHERE user_id LIKE $1"
+	query := "SELECT url, shorten FROM shortener WHERE user_id LIKE $1 and deleted = False"
 	rows, err := r.db.QueryxContext(ctx, query, userID)
 	if err != nil {
 		r.logger.Error("ошибка при запросе к бд", zap.Error(err))
