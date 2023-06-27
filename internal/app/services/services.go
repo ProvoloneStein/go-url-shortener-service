@@ -112,7 +112,7 @@ func (s *Service) DeleteUserURLsBatchSender(userID string, data []byte) {
 		s.logger.Error("ошибка при сериализации", zap.Error(err))
 		return
 	}
-	var val map[string][]string
+	val := make(map[string][]string)
 	val[userID] = reqBody
 	s.deleteChan <- val
 }
