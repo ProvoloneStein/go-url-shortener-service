@@ -36,7 +36,6 @@ type FileRepository struct {
 }
 
 func NewFileRepository(cfg configs.AppConfig, logger *zap.Logger, file *os.File) (*FileRepository, error) {
-
 	repo := FileRepository{
 		cfg:    cfg,
 		logger: logger,
@@ -50,7 +49,7 @@ func NewFileRepository(cfg configs.AppConfig, logger *zap.Logger, file *os.File)
 	for {
 		record, err := repo.readString()
 		if err != nil {
-			return nil, fmt.Errorf("Repository: %w", err)
+			return nil, fmt.Errorf("repository: %w", err)
 		}
 		if record == nil {
 			break
@@ -58,7 +57,7 @@ func NewFileRepository(cfg configs.AppConfig, logger *zap.Logger, file *os.File)
 		repo.store[record.ShortURL] = [3]string{record.OriginalURL, record.UserID, record.Deleted}
 		repo.uuid, err = strconv.Atoi(record.UUID)
 		if err != nil {
-			return nil, fmt.Errorf("Repository: Ошибка при получения uuid записи: %s", err)
+			return nil, fmt.Errorf("repository: ошибка при получения uuid записи: %s", err)
 		}
 	}
 	repo.uuid += 1
@@ -71,7 +70,7 @@ func (r *FileRepository) readString() (*ShorterRecord, error) {
 	if err == io.EOF {
 		return nil, nil
 	} else if err != nil {
-		return nil, fmt.Errorf("Ошибка при чтении строки %w", err)
+		return nil, fmt.Errorf("ошибка при чтении строки %w", err)
 	}
 	// Преобразуем данные из JSON-представления в структуру
 	record := ShorterRecord{}
@@ -90,23 +89,21 @@ func (r *FileRepository) writeString(record ShorterRecord) error {
 
 	// Записываем событие в буфер
 	if _, err := r.writer.Write(data); err != nil {
-		return fmt.Errorf("Ошибка при записи строки %w", err)
+		return fmt.Errorf("ошибка при записи строки %w", err)
 	}
 
 	// Добавляем перенос строки
 	if err := r.writer.WriteByte('\n'); err != nil {
-		return fmt.Errorf("Ошибка при записи строки %w", err)
+		return fmt.Errorf("ошибка при записи строки %w", err)
 	}
 
 	r.uuid += 1
 
 	// Записываем буфер в файл
 	return r.writer.Flush()
-
 }
 
 func (r *FileRepository) validateUniqueShortURL(ctx context.Context, shortURL string) error {
-
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -121,21 +118,21 @@ func (r *FileRepository) validateUniqueShortURL(ctx context.Context, shortURL st
 func (r *FileRepository) Create(ctx context.Context, userID, fullURL, shortURL string) (string, error) {
 	select {
 	case <-ctx.Done():
-		return "", fmt.Errorf("Repository: %w", ctx.Err())
+		return "", fmt.Errorf("repository: %w", ctx.Err())
 	default:
 	}
 	if err := r.validateUniqueShortURL(ctx, shortURL); err != nil {
-		return "", fmt.Errorf("Repository: %w", err)
+		return "", fmt.Errorf("repository: %w", err)
 	}
 	for key, val := range r.store {
 		if val[0] == fullURL {
-			return key, fmt.Errorf("Repository: %w", ErrorUniqueViolation)
+			return key, fmt.Errorf("repository: %w", ErrorUniqueViolation)
 		}
 	}
 	r.store[shortURL] = [3]string{fullURL, userID, "f"}
 	if err := r.writeString(ShorterRecord{strconv.Itoa(r.uuid), shortURL, fullURL, userID, "f"}); err != nil {
 		delete(r.store, shortURL)
-		return shortURL, fmt.Errorf("Repository: %w", err)
+		return shortURL, fmt.Errorf("repository: %w", err)
 	}
 	return shortURL, nil
 }
@@ -162,7 +159,7 @@ func (r *FileRepository) BatchCreate(ctx context.Context, data []models.BatchCre
 		_, err = r.Create(ctx, val.UserID, val.URL, val.ShortURL)
 		if err != nil && !errors.Is(err, ErrorUniqueViolation) {
 			r.logger.Error("ошибка при записи url", zap.Error(err))
-			return response, fmt.Errorf("Repository: %w", err)
+			return response, fmt.Errorf("repository: %w", err)
 		}
 		response = append(response, models.BatchCreateResponse{ShortURL: shortURL, UUID: val.UUID})
 	}
@@ -178,7 +175,7 @@ func (r *FileRepository) GetByShort(ctx context.Context, shortURL string) (strin
 	data, ok := r.store[shortURL]
 	if ok {
 		if data[2] == "t" {
-			return "", fmt.Errorf("Repository: %w", ErrDeleted)
+			return "", fmt.Errorf("repository: %w", ErrDeleted)
 		}
 		return data[0], nil
 	}
@@ -197,7 +194,7 @@ func (r *FileRepository) GetListByUser(ctx context.Context, userID string) ([]mo
 	var result []models.GetURLResponse
 	select {
 	case <-ctx.Done():
-		return nil, fmt.Errorf("Repository: %w", ctx.Err())
+		return nil, fmt.Errorf("repository: %w", ctx.Err())
 	default:
 	}
 	for key, val := range r.store {
@@ -220,22 +217,21 @@ func (r *FileRepository) DeleteUserURLsBatch(ctx context.Context, userID string,
 			if row[1] == userID {
 				row[2] = "t"
 			}
-			//todo исправить в файле
+			// todo исправить в файле
 		}
 	}
 	return nil
 }
 
 func (r *FileRepository) ValidateUniqueUser(ctx context.Context, userID string) error {
-
 	select {
 	case <-ctx.Done():
-		return fmt.Errorf("Repository: %w", ctx.Err())
+		return fmt.Errorf("repository: %w", ctx.Err())
 	default:
 	}
 	for _, val := range r.store {
 		if val[1] == userID {
-			return fmt.Errorf("Repository: %w: %s", ErrUserExists, userID)
+			return fmt.Errorf("repository: %w: %s", ErrUserExists, userID)
 		}
 	}
 	return nil
