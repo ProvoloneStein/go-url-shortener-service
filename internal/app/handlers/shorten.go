@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/repositories"
 	"github.com/asaskevich/govalidator"
@@ -171,10 +170,7 @@ func (h *Handler) deleteUserURLsBatch(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Неверное тело запрос", http.StatusBadRequest)
 		return
 	}
-	err = h.services.DeleteUserURLsBatch(ctx, userID, reqBody)
-	if err != nil {
-		h.logger.Error(fmt.Sprintf("error while DeleteURLBatch: %s", err.Error()))
-	}
+	go h.services.DeleteUserURLsBatch(ctx, userID, reqBody)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
 

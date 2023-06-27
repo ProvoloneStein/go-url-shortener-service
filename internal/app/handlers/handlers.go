@@ -21,7 +21,7 @@ type Service interface {
 	BatchCreate(ctx context.Context, userID string, data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error)
 	GetFullByID(ctx context.Context, shortURL string) (string, error)
 	GetListByUser(ctx context.Context, userID string) ([]models.GetURLResponse, error)
-	DeleteUserURLsBatch(ctx context.Context, userID string, data []string) error
+	DeleteUserURLsBatch(ctx context.Context, userID string, data []string)
 	GenerateToken(ctx context.Context) (string, error)
 	ParseToken(accessToken string) (string, error)
 	Ping() error

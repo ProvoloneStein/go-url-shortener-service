@@ -96,8 +96,10 @@ func (s *Service) GetListByUser(ctx context.Context, userID string) ([]models.Ge
 	return s.repo.GetListByUser(ctx, userID)
 }
 
-func (s *Service) DeleteUserURLsBatch(ctx context.Context, userID string, data []string) error {
-	return s.repo.DeleteUserURLsBatch(ctx, userID, data)
+func (s *Service) DeleteUserURLsBatch(ctx context.Context, userID string, data []string) {
+	if err := s.repo.DeleteUserURLsBatch(ctx, userID, data); err != nil {
+		s.logger.Error("ошибка при удалении", zap.Error(err))
+	}
 }
 
 func (s *Service) Ping() error {
