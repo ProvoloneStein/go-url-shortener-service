@@ -31,7 +31,7 @@ type Service struct {
 
 func NewService(logger *zap.Logger, cfg configs.AppConfig, repo Repository) *Service {
 	service := Service{logger: logger, cfg: cfg, repo: repo, deleteChan: make(chan map[string][]string)}
-	go service.deleteUserURLsBatchConsumer(context.Background())
+	go service.deleteUserURLsBatchConsumer()
 	return &service
 }
 
@@ -117,10 +117,10 @@ func (s *Service) DeleteUserURLsBatchSender(userID string, data []byte) {
 	s.deleteChan <- val
 }
 
-func (s *Service) deleteUserURLsBatchConsumer(ctx context.Context) {
+func (s *Service) deleteUserURLsBatchConsumer() {
 	x := <-s.deleteChan
 	for key, val := range x {
-		if err := s.repo.DeleteUserURLsBatch(ctx, key, val); err != nil {
+		if err := s.repo.DeleteUserURLsBatch(context.Background(), key, val); err != nil {
 			s.logger.Error("ошибка при удалении", zap.Error(err))
 		}
 	}
