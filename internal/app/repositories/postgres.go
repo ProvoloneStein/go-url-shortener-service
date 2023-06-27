@@ -86,12 +86,18 @@ func (r *DBRepository) Create(ctx context.Context, userID, fullURL, shortURL str
 		return "", err
 	}
 	defer func() {
-		err = errors.Join(err, tx.Commit())
+		errDefer := tx.Commit()
+		if errDefer != nil {
+			err = errDefer
+		}
 	}()
 
 	if err := r.validateUniqueShortURL(ctx, tx, shortURL); err != nil {
 		defer func() {
-			err = errors.Join(err, tx.Rollback())
+			errDefer := tx.Rollback()
+			if errDefer != nil {
+				err = errDefer
+			}
 		}()
 		return "", err
 	}
@@ -99,14 +105,20 @@ func (r *DBRepository) Create(ctx context.Context, userID, fullURL, shortURL str
 	res := tx.QueryRowContext(ctx, query, fullURL, shortURL, userID)
 	if err := res.Scan(&shortRes); err != nil {
 		defer func() {
-			err = errors.Join(err, tx.Rollback())
+			errDefer := tx.Rollback()
+			if errDefer != nil {
+				err = errDefer
+			}
 		}()
 		return "", err
 	}
 
 	if shortRes != shortURL {
 		defer func() {
-			err = errors.Join(err, tx.Rollback())
+			errDefer := tx.Rollback()
+			if errDefer != nil {
+				err = errDefer
+			}
 		}()
 		return shortRes, ErrorUniqueViolation
 	}
@@ -129,19 +141,28 @@ func (r *DBRepository) BatchCreate(ctx context.Context, data []models.BatchCreat
 	}
 
 	defer func() {
-		err = errors.Join(err, tx.Commit())
+		errDefer := tx.Commit()
+		if errDefer != nil {
+			err = errDefer
+		}
 	}()
 	// генерируем список сокращенных урлов
 	query := "INSERT INTO shortener (url, shorten, correlation_id, user_id) VALUES(:url, :shorten, :correlation_id, :user_id) ON CONFLICT(url)  DO UPDATE SET shorten = shortener.shorten RETURNING shorten, correlation_id"
 	// создаем
 	rows, err := tx.NamedQuery(query, data)
 	if err != nil {
-		err = errors.Join(err, tx.Rollback())
+		errDefer := tx.Rollback()
+		if errDefer != nil {
+			err = errDefer
+		}
 		r.logger.Error("ошибка при запросе к бд", zap.Error(err))
 		return nil, fmt.Errorf("ошибка при запросе к бд: %s", err)
 	}
 	defer func() {
-		err = errors.Join(err, rows.Close())
+		errDefer := rows.Close()
+		if errDefer != nil {
+			err = errDefer
+		}
 	}()
 	// обрабатываем ответ
 	for rows.Next() {
@@ -151,16 +172,22 @@ func (r *DBRepository) BatchCreate(ctx context.Context, data []models.BatchCreat
 		}
 		row.ShortURL, err = url.JoinPath(r.cfg.BaseURL, row.ShortURL)
 		if err != nil {
-			err = errors.Join(err, tx.Rollback())
 			r.logger.Error("ошибка при формировании ответа", zap.Error(err))
+			errRollback := tx.Rollback()
+			if errRollback != nil {
+				err = errRollback
+			}
 			return nil, err
 		}
 		response = append(response, row)
 	}
 
 	if err := rows.Err(); err != nil {
-		err = errors.Join(err, tx.Rollback())
 		r.logger.Error("ошибка при формировании ответа", zap.Error(err))
+		errRollback := tx.Rollback()
+		if errRollback != nil {
+			err = errRollback
+		}
 		return nil, err
 	}
 
@@ -237,7 +264,10 @@ func (r *DBRepository) GetListByUser(ctx context.Context, userID string) ([]mode
 		return nil, fmt.Errorf("ошибка при запросе к бд: %s", err)
 	}
 	defer func() {
-		err = errors.Join(err, rows.Close())
+		errDefer := rows.Close()
+		if errDefer != nil {
+			err = errDefer
+		}
 	}()
 	// обрабатываем ответ
 	for rows.Next() {
