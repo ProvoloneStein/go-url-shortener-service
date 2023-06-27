@@ -29,7 +29,7 @@ func NewLocalRepository(logger *zap.Logger, cfg configs.AppConfig) *LocalReposit
 func (r *LocalRepository) validateUniqueShortURL(ctx context.Context, shortURL string) error {
 	select {
 	case <-ctx.Done():
-		return ctx.Err()
+		return fmt.Errorf("repository: %w", ctx.Err())
 	default:
 	}
 	if _, ok := r.store[shortURL]; !ok {
@@ -41,7 +41,7 @@ func (r *LocalRepository) validateUniqueShortURL(ctx context.Context, shortURL s
 func (r *LocalRepository) Create(ctx context.Context, userID, fullURL, shortURL string) (string, error) {
 	select {
 	case <-ctx.Done():
-		return "", ctx.Err()
+		return "", fmt.Errorf("repository: %w", ctx.Err())
 	default:
 	}
 	if err := r.validateUniqueShortURL(ctx, shortURL); err != nil {
@@ -61,7 +61,7 @@ func (r *LocalRepository) BatchCreate(ctx context.Context, data []models.BatchCr
 
 	select {
 	case <-ctx.Done():
-		return nil, ctx.Err()
+		return nil, fmt.Errorf("repository: %w", ctx.Err())
 	default:
 	}
 	for _, val := range data {
@@ -88,7 +88,7 @@ func (r *LocalRepository) BatchCreate(ctx context.Context, data []models.BatchCr
 func (r *LocalRepository) GetByShort(ctx context.Context, shortURL string) (string, error) {
 	select {
 	case <-ctx.Done():
-		return "", ctx.Err()
+		return "", fmt.Errorf("repository: %w", ctx.Err())
 	default:
 	}
 	data, ok := r.store[shortURL]
@@ -113,7 +113,7 @@ func (r *LocalRepository) GetListByUser(ctx context.Context, userID string) ([]m
 	var result []models.GetURLResponse
 	select {
 	case <-ctx.Done():
-		return nil, ctx.Err()
+		return nil, fmt.Errorf("repository: %w", ctx.Err())
 	default:
 	}
 	for key, val := range r.store {
@@ -127,7 +127,7 @@ func (r *LocalRepository) GetListByUser(ctx context.Context, userID string) ([]m
 func (r *LocalRepository) ValidateUniqueUser(ctx context.Context, userID string) error {
 	select {
 	case <-ctx.Done():
-		return ctx.Err()
+		return fmt.Errorf("repository: %w", ctx.Err())
 	default:
 	}
 	for _, val := range r.store {
@@ -141,7 +141,7 @@ func (r *LocalRepository) ValidateUniqueUser(ctx context.Context, userID string)
 func (r *LocalRepository) DeleteUserURLsBatch(ctx context.Context, userID string, data []string) error {
 	select {
 	case <-ctx.Done():
-		return ctx.Err()
+		return fmt.Errorf("repository: %w", ctx.Err())
 	default:
 	}
 	for _, short := range data {

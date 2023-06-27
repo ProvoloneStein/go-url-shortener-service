@@ -76,7 +76,7 @@ func (r *FileRepository) readString() (*ShorterRecord, error) {
 	record := ShorterRecord{}
 	err = json.Unmarshal(data, &record)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("repository: %w", err)
 	}
 	return &record, nil
 }
@@ -106,7 +106,7 @@ func (r *FileRepository) writeString(record ShorterRecord) error {
 func (r *FileRepository) validateUniqueShortURL(ctx context.Context, shortURL string) error {
 	select {
 	case <-ctx.Done():
-		return ctx.Err()
+		return fmt.Errorf("repository: %w", ctx.Err())
 	default:
 	}
 	if _, ok := r.store[shortURL]; !ok {
@@ -142,7 +142,7 @@ func (r *FileRepository) BatchCreate(ctx context.Context, data []models.BatchCre
 
 	select {
 	case <-ctx.Done():
-		return nil, ctx.Err()
+		return nil, fmt.Errorf("repository: %w", ctx.Err())
 	default:
 	}
 	for _, val := range data {
@@ -169,7 +169,7 @@ func (r *FileRepository) BatchCreate(ctx context.Context, data []models.BatchCre
 func (r *FileRepository) GetByShort(ctx context.Context, shortURL string) (string, error) {
 	select {
 	case <-ctx.Done():
-		return "", ctx.Err()
+		return "", fmt.Errorf("repository: %w", ctx.Err())
 	default:
 	}
 	data, ok := r.store[shortURL]
