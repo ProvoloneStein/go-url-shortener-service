@@ -66,11 +66,9 @@ func (mr *MockServiceMockRecorder) CreateShortURL(ctx, userID, fullURL interface
 }
 
 // DeleteUserURLsBatch mocks base method.
-func (m *MockService) DeleteUserURLsBatch(ctx context.Context, userID string, data []string) error {
+func (m *MockService) DeleteUserURLsBatch(ctx context.Context, userID string, data []string) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteUserURLsBatch", ctx, userID, data)
-	ret0, _ := ret[0].(error)
-	return ret0
+	m.ctrl.Call(m, "DeleteUserURLsBatch", ctx, userID, data)
 }
 
 // DeleteUserURLsBatch indicates an expected call of DeleteUserURLsBatch.
