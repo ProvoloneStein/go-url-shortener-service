@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"github.com/ProvoloneStein/go-url-shortener-service/configs"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
@@ -22,13 +23,16 @@ type Repository interface {
 }
 
 type Service struct {
-	logger *zap.Logger
-	cfg    configs.AppConfig
-	repo   Repository
+	logger     *zap.Logger
+	cfg        configs.AppConfig
+	repo       Repository
+	deleteChan chan map[string][]string
 }
 
 func NewService(logger *zap.Logger, cfg configs.AppConfig, repo Repository) *Service {
-	return &Service{logger: logger, cfg: cfg, repo: repo}
+	service := Service{logger: logger, cfg: cfg, repo: repo, deleteChan: make(chan map[string][]string)}
+	go service.deleteUserURLsBatchConsumer(context.Background())
+	return &service
 }
 
 func (s *Service) CreateShortURL(ctx context.Context, userID, fullURL string) (string, error) {
@@ -99,6 +103,26 @@ func (s *Service) GetListByUser(ctx context.Context, userID string) ([]models.Ge
 func (s *Service) DeleteUserURLsBatch(ctx context.Context, userID string, data []string) {
 	if err := s.repo.DeleteUserURLsBatch(ctx, userID, data); err != nil {
 		s.logger.Error("ошибка при удалении", zap.Error(err))
+	}
+}
+
+func (s *Service) DeleteUserURLsBatchSender(userID string, data []byte) {
+	var reqBody []string
+	if err := json.Unmarshal(data, &reqBody); err != nil {
+		s.logger.Error("ошибка при сериализации", zap.Error(err))
+		return
+	}
+	var val map[string][]string
+	val[userID] = reqBody
+	s.deleteChan <- val
+}
+
+func (s *Service) deleteUserURLsBatchConsumer(ctx context.Context) {
+	x := <-s.deleteChan
+	for key, val := range x {
+		if err := s.repo.DeleteUserURLsBatch(ctx, key, val); err != nil {
+			s.logger.Error("ошибка при удалении", zap.Error(err))
+		}
 	}
 }
 

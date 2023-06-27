@@ -25,6 +25,7 @@ type Service interface {
 	GenerateToken(ctx context.Context) (string, error)
 	ParseToken(accessToken string) (string, error)
 	Ping() error
+	DeleteUserURLsBatchSender(userID string, data []byte)
 }
 
 type Handler struct {
