@@ -52,12 +52,12 @@ func (h *Handler) createShortURL(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) getByShort(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	shortURL := chi.URLParam(r, "id")
-	userID, err := getUserID(ctx)
+	_, err := getUserID(ctx)
 	if err != nil {
 		http.Error(w, "ошибка авторизации", http.StatusInternalServerError)
 		return
 	}
-	res, err := h.services.GetFullByID(ctx, userID, shortURL)
+	res, err := h.services.GetFullByID(ctx, shortURL)
 	if err != nil {
 		if errors.Is(err, repositories.ErrURLNotFound) {
 			http.Error(w, err.Error(), http.StatusBadRequest)

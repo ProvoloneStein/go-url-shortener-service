@@ -88,8 +88,7 @@ generator:
 	}
 }
 
-func (s *Service) GetFullByID(ctx context.Context, userID, shortURL string) (string, error) {
-	// todo оставлю userID до тестов. хз надо ли учитывать
+func (s *Service) GetFullByID(ctx context.Context, shortURL string) (string, error) {
 	return s.repo.GetByShort(ctx, shortURL)
 }
 

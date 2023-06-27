@@ -19,7 +19,7 @@ import (
 type Service interface {
 	CreateShortURL(ctx context.Context, userID, fullURL string) (string, error)
 	BatchCreate(ctx context.Context, userID string, data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error)
-	GetFullByID(ctx context.Context, userID, shortURL string) (string, error)
+	GetFullByID(ctx context.Context, shortURL string) (string, error)
 	GetListByUser(ctx context.Context, userID string) ([]models.GetURLResponse, error)
 	DeleteUserURLsBatch(ctx context.Context, userID string, data []string) error
 	GenerateToken(ctx context.Context) (string, error)
