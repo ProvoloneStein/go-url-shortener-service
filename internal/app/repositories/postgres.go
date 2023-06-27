@@ -5,12 +5,14 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/ProvoloneStein/go-url-shortener-service/configs"
-	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
+	"net/url"
+
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap"
-	"net/url"
+
+	"github.com/ProvoloneStein/go-url-shortener-service/configs"
+	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
 )
 
 type DBRepository struct {
@@ -89,7 +91,8 @@ func (r *DBRepository) Create(ctx context.Context, userID, fullURL, shortURL str
 		tx.Rollback()
 		return "", err
 	}
-	res := tx.QueryRowContext(ctx, "INSERT INTO shortener (url, shorten, user_id) VALUES($1, $2, $3) ON CONFLICT(url) DO UPDATE SET shorten = shortener.shorten RETURNING shorten", fullURL, shortURL, userID)
+	query := "INSERT INTO shortener (url, shorten, user_id) VALUES($1, $2, $3) ON CONFLICT(url) DO UPDATE SET shorten = shortener.shorten RETURNING shorten"
+	res := tx.QueryRowContext(ctx, query, fullURL, shortURL, userID)
 	if err := res.Scan(&shortRes); err != nil {
 		tx.Rollback()
 		return "", err

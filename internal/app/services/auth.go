@@ -3,9 +3,11 @@ package services
 import (
 	"context"
 	"errors"
-	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/repositories"
-	"github.com/golang-jwt/jwt/v4"
 	"time"
+
+	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/repositories"
+
+	"github.com/golang-jwt/jwt/v4"
 )
 
 const (

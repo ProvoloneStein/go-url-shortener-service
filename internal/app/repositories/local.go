@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
+
+	"go.uber.org/zap"
+
 	"github.com/ProvoloneStein/go-url-shortener-service/configs"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
-	"go.uber.org/zap"
-	"net/url"
 )
 
 type LocalRepository struct {

@@ -3,9 +3,7 @@ package configs
 import (
 	"flag"
 	"fmt"
-)
 
-import (
 	"github.com/caarlos0/env/v8"
 )
 
@@ -26,7 +24,7 @@ func InitConfig() (AppConfig, error) {
 	flag.Parse()
 	err := env.Parse(&config)
 	if err != nil {
-		return config, fmt.Errorf("ошибка при получении переменных окружения: %s", err)
+		return config, fmt.Errorf("ошибка при получении переменных окружения: %w", err)
 	}
-	return config, err
+	return config, nil
 }

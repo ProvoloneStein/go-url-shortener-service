@@ -3,10 +3,11 @@ package handlers
 import (
 	"compress/gzip"
 	"context"
-	"go.uber.org/zap"
 	"io"
 	"net/http"
 	"strings"
+
+	"go.uber.org/zap"
 )
 
 type userCtxKey string

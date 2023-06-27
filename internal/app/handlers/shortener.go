@@ -2,15 +2,14 @@ package handlers
 
 import (
 	"errors"
-	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/repositories"
-	"github.com/go-chi/chi/v5"
-	"go.uber.org/zap"
-)
-
-import (
 	"io"
 	"net/http"
 	"strings"
+
+	"go.uber.org/zap"
+
+	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/repositories"
+	"github.com/go-chi/chi/v5"
 )
 
 func (h *Handler) createShortURL(w http.ResponseWriter, r *http.Request) {

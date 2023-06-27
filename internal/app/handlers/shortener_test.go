@@ -3,17 +3,19 @@ package handlers
 import (
 	"context"
 	"fmt"
-	mock_handlers "github.com/ProvoloneStein/go-url-shortener-service/internal/app/handlers/mocks"
-	"github.com/go-chi/chi/v5"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
 	"strings"
 	"testing"
+	
+	"github.com/go-chi/chi/v5"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
+
+	mock_handlers "github.com/ProvoloneStein/go-url-shortener-service/internal/app/handlers/mocks"
 )
 
 func TestHandler_createShortURL(t *testing.T) {

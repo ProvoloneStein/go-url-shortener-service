@@ -3,14 +3,10 @@ package handlers
 import (
 	"context"
 	"net/http"
-)
 
-import (
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
-)
 
-import (
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/logger"
 )
@@ -25,7 +21,6 @@ type Service interface {
 	GenerateToken(ctx context.Context) (string, error)
 	ParseToken(accessToken string) (string, error)
 	Ping() error
-	//DeleteUserURLsBatchSender(userID string, data []byte)
 }
 
 type Handler struct {

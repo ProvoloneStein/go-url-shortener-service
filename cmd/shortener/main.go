@@ -1,6 +1,12 @@
 package main
 
 import (
+	"fmt"
+	"log"
+	"os"
+
+	"go.uber.org/zap"
+
 	"github.com/ProvoloneStein/go-url-shortener-service/configs"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/handlers"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/repositories"
@@ -9,13 +15,7 @@ import (
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/logger"
 )
 
-import "go.uber.org/zap"
-
-import (
-	"fmt"
-	"log"
-	"os"
-)
+const filePerms = 0600
 
 func main() {
 	config, err := configs.InitConfig()
@@ -27,6 +27,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	switch {
+
+	}
 	if config.DatabaseDSN != "" {
 		repos, err = repositories.NewDBRepository(logger, config)
 		if err != nil {
@@ -36,7 +39,7 @@ func main() {
 	} else if config.FileStorage == "" {
 		repos = repositories.NewLocalRepository(logger, config)
 	} else {
-		file, err := os.OpenFile(config.FileStorage, os.O_CREATE|os.O_RDWR, 0666)
+		file, err := os.OpenFile(config.FileStorage, os.O_CREATE|os.O_RDWR, filePerms)
 		if err != nil {
 			logger.Fatal("ошибка при попытке открытия файла", zap.Error(err))
 		}

@@ -5,13 +5,15 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
-	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/repositories"
-	"github.com/asaskevich/govalidator"
-	"go.uber.org/zap"
 	"io"
 	"net/http"
 	"strings"
+
+	"go.uber.org/zap"
+
+	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
+	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/repositories"
+	"github.com/asaskevich/govalidator"
 )
 
 type requestData struct {
@@ -167,7 +169,6 @@ func (h *Handler) deleteUserURLsBatch(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Ошибка при чтении тела запроса", http.StatusBadRequest)
 		return
 	}
-	//go h.services.DeleteUserURLsBatchSender(userID, body)
 	if err := json.Unmarshal(body, &reqBody); err != nil {
 		http.Error(w, "Неверное тело запрос", http.StatusBadRequest)
 		return

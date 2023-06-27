@@ -6,13 +6,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/ProvoloneStein/go-url-shortener-service/configs"
-	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
-	"go.uber.org/zap"
 	"io"
 	"net/url"
 	"os"
 	"strconv"
+
+	"go.uber.org/zap"
+
+	"github.com/ProvoloneStein/go-url-shortener-service/configs"
+	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
 )
 
 type ShorterRecord struct {
@@ -46,9 +48,9 @@ func NewFileRepository(cfg configs.AppConfig, logger *zap.Logger, file *os.File)
 	}
 
 	for {
-		record, err := repo.ReadString()
+		record, err := repo.readString()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("Repository: %w", err)
 		}
 		if record == nil {
 			break
@@ -56,22 +58,22 @@ func NewFileRepository(cfg configs.AppConfig, logger *zap.Logger, file *os.File)
 		repo.store[record.ShortURL] = [3]string{record.OriginalURL, record.UserID, record.Deleted}
 		repo.uuid, err = strconv.Atoi(record.UUID)
 		if err != nil {
-			return nil, fmt.Errorf("ошибка при получения uuid записи: %s", err)
+			return nil, fmt.Errorf("Repository: Ошибка при получения uuid записи: %s", err)
 		}
 	}
 	repo.uuid += 1
 	return &repo, nil
 }
 
-func (r *FileRepository) ReadString() (*ShorterRecord, error) {
-	// читаем данные до символа переноса строки
+func (r *FileRepository) readString() (*ShorterRecord, error) {
+	// Читаем данные до символа переноса строки
 	data, err := r.reader.ReadBytes('\n')
 	if err == io.EOF {
 		return nil, nil
 	} else if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Ошибка при чтении строки %w", err)
 	}
-	// преобразуем данные из JSON-представления в структуру
+	// Преобразуем данные из JSON-представления в структуру
 	record := ShorterRecord{}
 	err = json.Unmarshal(data, &record)
 	if err != nil {
@@ -80,25 +82,25 @@ func (r *FileRepository) ReadString() (*ShorterRecord, error) {
 	return &record, nil
 }
 
-func (r *FileRepository) WriteString(record ShorterRecord) error {
+func (r *FileRepository) writeString(record ShorterRecord) error {
 	data, err := json.Marshal(&record)
 	if err != nil {
 		return err
 	}
 
-	// записываем событие в буфер
+	// Записываем событие в буфер
 	if _, err := r.writer.Write(data); err != nil {
-		return err
+		return fmt.Errorf("Ошибка при записи строки %w", err)
 	}
 
-	// добавляем перенос строки
+	// Добавляем перенос строки
 	if err := r.writer.WriteByte('\n'); err != nil {
-		return err
+		return fmt.Errorf("Ошибка при записи строки %w", err)
 	}
 
 	r.uuid += 1
 
-	// записываем буфер в файл
+	// Записываем буфер в файл
 	return r.writer.Flush()
 
 }
@@ -119,21 +121,21 @@ func (r *FileRepository) validateUniqueShortURL(ctx context.Context, shortURL st
 func (r *FileRepository) Create(ctx context.Context, userID, fullURL, shortURL string) (string, error) {
 	select {
 	case <-ctx.Done():
-		return "", ctx.Err()
+		return "", fmt.Errorf("Repository: %w", ctx.Err())
 	default:
 	}
 	if err := r.validateUniqueShortURL(ctx, shortURL); err != nil {
-		return "", err
+		return "", fmt.Errorf("Repository: %w", err)
 	}
 	for key, val := range r.store {
 		if val[0] == fullURL {
-			return key, ErrorUniqueViolation
+			return key, fmt.Errorf("Repository: %w", ErrorUniqueViolation)
 		}
 	}
 	r.store[shortURL] = [3]string{fullURL, userID, "f"}
-	if err := r.WriteString(ShorterRecord{strconv.Itoa(r.uuid), shortURL, fullURL, userID, "f"}); err != nil {
+	if err := r.writeString(ShorterRecord{strconv.Itoa(r.uuid), shortURL, fullURL, userID, "f"}); err != nil {
 		delete(r.store, shortURL)
-		return shortURL, err
+		return shortURL, fmt.Errorf("Repository: %w", err)
 	}
 	return shortURL, nil
 }
@@ -148,7 +150,7 @@ func (r *FileRepository) BatchCreate(ctx context.Context, data []models.BatchCre
 	}
 	for _, val := range data {
 		if err := r.validateUniqueShortURL(ctx, val.ShortURL); err != nil {
-			return []models.BatchCreateResponse{models.BatchCreateResponse{ShortURL: val.ShortURL, UUID: val.UUID}}, err
+			return []models.BatchCreateResponse{models.BatchCreateResponse{ShortURL: val.ShortURL, UUID: val.UUID}}, fmt.Errorf("Repository: %w", err)
 		}
 	}
 	for _, val := range data {
@@ -160,7 +162,7 @@ func (r *FileRepository) BatchCreate(ctx context.Context, data []models.BatchCre
 		_, err = r.Create(ctx, val.UserID, val.URL, val.ShortURL)
 		if err != nil && !errors.Is(err, ErrorUniqueViolation) {
 			r.logger.Error("ошибка при записи url", zap.Error(err))
-			return response, err
+			return response, fmt.Errorf("Repository: %w", err)
 		}
 		response = append(response, models.BatchCreateResponse{ShortURL: shortURL, UUID: val.UUID})
 	}
@@ -176,7 +178,7 @@ func (r *FileRepository) GetByShort(ctx context.Context, shortURL string) (strin
 	data, ok := r.store[shortURL]
 	if ok {
 		if data[2] == "t" {
-			return "", ErrDeleted
+			return "", fmt.Errorf("Repository: %w", ErrDeleted)
 		}
 		return data[0], nil
 	}
@@ -195,7 +197,7 @@ func (r *FileRepository) GetListByUser(ctx context.Context, userID string) ([]mo
 	var result []models.GetURLResponse
 	select {
 	case <-ctx.Done():
-		return nil, ctx.Err()
+		return nil, fmt.Errorf("Repository: %w", ctx.Err())
 	default:
 	}
 	for key, val := range r.store {
@@ -228,12 +230,12 @@ func (r *FileRepository) ValidateUniqueUser(ctx context.Context, userID string) 
 
 	select {
 	case <-ctx.Done():
-		return ctx.Err()
+		return fmt.Errorf("Repository: %w", ctx.Err())
 	default:
 	}
 	for _, val := range r.store {
 		if val[1] == userID {
-			return fmt.Errorf("%w: %s", ErrUserExists, userID)
+			return fmt.Errorf("Repository: %w: %s", ErrUserExists, userID)
 		}
 	}
 	return nil
