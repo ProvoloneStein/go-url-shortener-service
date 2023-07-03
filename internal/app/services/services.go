@@ -74,11 +74,11 @@ func (s *Service) BatchCreate(ctx context.Context, userID string,
 		queryData = append(queryData, obj)
 	}
 
-generator:
 	for {
 		res, err := s.repo.BatchCreate(ctx, queryData)
 		if err != nil {
 			if errors.Is(err, repositories.ErrShortURLExists) {
+			generator:
 				for resIndex := range res {
 					shortID := repositories.RandomString()
 					// проверяем что не задублировали shortID
