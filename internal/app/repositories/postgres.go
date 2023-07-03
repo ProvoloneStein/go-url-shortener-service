@@ -141,14 +141,12 @@ func (r *DBRepository) BatchCreate(ctx context.Context,
 	}
 
 	for _, val := range data {
-		r.logger.Info(fmt.Sprintf("1 %s %s", val.ShortURL, val.URL))
 		if err := r.validateUniqueShortURL(ctx, tx, val.ShortURL); err != nil {
 			if errDefer := tx.Rollback(); errDefer != nil {
 				r.logger.Error("repository: ошибка при откате трансакции", zap.Error(errDefer))
 			}
 			return []models.BatchCreateResponse{models.BatchCreateResponse{ShortURL: val.ShortURL, UUID: val.UUID}}, err
 		}
-		r.logger.Info(fmt.Sprintf("2 %s %s", val.ShortURL, val.URL))
 	}
 
 	// генерируем список сокращенных урлов

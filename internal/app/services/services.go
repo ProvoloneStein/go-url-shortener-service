@@ -66,7 +66,6 @@ func (s *Service) CreateShortURL(ctx context.Context, userID, fullURL string) (s
 
 func (s *Service) BatchCreate(ctx context.Context, userID string,
 	data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
-	var res []models.BatchCreateResponse
 
 	queryData := make([]models.BatchCreateData, 0, len(data))
 	for dataIndex := range data {
@@ -78,25 +77,29 @@ func (s *Service) BatchCreate(ctx context.Context, userID string,
 
 generator:
 	for {
-		for resIndex := range res {
-			shortID := repositories.RandomString()
-			s.logger.Info(fmt.Sprintf("%s", shortID))
-			// проверяем что не задублировали shortID
-			for queryIndex := range queryData {
-				if shortID == queryData[queryIndex].ShortURL {
-					res = res[resIndex:]
-					continue generator
-				}
-			}
-			for queryIndex := range queryData {
-				if res[resIndex].ShortURL == queryData[queryIndex].ShortURL {
-					queryData[queryIndex].ShortURL = shortID
-				}
-			}
-		}
 		res, err := s.repo.BatchCreate(ctx, queryData)
 		if err != nil {
 			if errors.Is(err, repositories.ErrShortURLExists) {
+				for resIndex := range res {
+					shortID := repositories.RandomString()
+					s.logger.Info(fmt.Sprintf("%s", shortID))
+					// проверяем что не задублировали shortID
+					for queryIndex := range queryData {
+						if shortID == queryData[queryIndex].ShortURL {
+							if len(res) > 1 {
+								res = res[resIndex:]
+							} else {
+								res = nil
+							}
+							continue generator
+						}
+					}
+					for queryIndex := range queryData {
+						if res[resIndex].ShortURL == queryData[queryIndex].ShortURL {
+							queryData[queryIndex].ShortURL = shortID
+						}
+					}
+				}
 				continue
 			}
 			return nil, defaultServiceErrWrapper(err)
