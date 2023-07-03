@@ -70,7 +70,6 @@ func (s *Service) BatchCreate(ctx context.Context, userID string,
 	queryData := make([]models.BatchCreateData, 0, len(data))
 	for dataIndex := range data {
 		shortID := repositories.RandomString()
-		s.logger.Info(fmt.Sprintf("%s", shortID))
 		obj := models.BatchCreateData{ShortURL: shortID, URL: data[dataIndex].URL, UUID: data[dataIndex].UUID, UserID: userID}
 		queryData = append(queryData, obj)
 	}
@@ -82,7 +81,6 @@ generator:
 			if errors.Is(err, repositories.ErrShortURLExists) {
 				for resIndex := range res {
 					shortID := repositories.RandomString()
-					s.logger.Info(fmt.Sprintf("%s", shortID))
 					// проверяем что не задублировали shortID
 					for queryIndex := range queryData {
 						if shortID == queryData[queryIndex].ShortURL {
