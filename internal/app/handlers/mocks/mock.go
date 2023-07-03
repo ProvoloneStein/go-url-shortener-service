@@ -36,7 +36,8 @@ func (m *MockService) EXPECT() *MockServiceMockRecorder {
 }
 
 // BatchCreate mocks base method.
-func (m *MockService) BatchCreate(ctx context.Context, userID string, data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
+func (m *MockService) BatchCreate(ctx context.Context, userID string,
+	data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "BatchCreate", ctx, userID, data)
 	ret0, _ := ret[0].([]models.BatchCreateResponse)

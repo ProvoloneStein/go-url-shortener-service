@@ -97,8 +97,8 @@ linters-settings:
     ignore-calls: false
     ignore-tests: false
     match-constant: true
-    min-len: 1
-    min-occurrences: 2
+    min-len: 4
+    min-occurrences: 4
     numbers: false
 
   gocritic:

@@ -11,6 +11,8 @@ import (
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/logger"
 )
 
+const contenntTypeHeader = "Content-Type"
+
 //go:generate mockgen -source=handlers.go -destination=mocks/mock.go
 type Service interface {
 	CreateShortURL(ctx context.Context, userID, fullURL string) (string, error)

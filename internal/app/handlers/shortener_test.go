@@ -24,8 +24,8 @@ func TestHandler_createShortURL(t *testing.T) {
 
 	type want struct {
 		contentType string
-		statusCode  int
 		body        string
+		statusCode  int
 	}
 
 	tests := []struct {
@@ -40,7 +40,8 @@ func TestHandler_createShortURL(t *testing.T) {
 			contentType: "type",
 			body:        "https://ya.ru",
 			mockBehavior: func(r *mock_handlers.MockService, fullURL string) {
-				r.EXPECT().CreateShortURL(gomock.AssignableToTypeOf(reflect.TypeOf((*context.Context)(nil)).Elem()), gomock.AssignableToTypeOf("string"), fullURL).Return("123", nil).MaxTimes(1)
+				r.EXPECT().CreateShortURL(gomock.AssignableToTypeOf(reflect.TypeOf((*context.Context)(nil)).Elem()),
+					gomock.AssignableToTypeOf("string"), fullURL).Return("123", nil).MaxTimes(1)
 			},
 			want: want{
 				contentType: "text/plain; charset=utf-8",
@@ -53,7 +54,8 @@ func TestHandler_createShortURL(t *testing.T) {
 			contentType: "text/plain",
 			body:        "https://ya.ru",
 			mockBehavior: func(r *mock_handlers.MockService, fullURL string) {
-				r.EXPECT().CreateShortURL(gomock.AssignableToTypeOf(reflect.TypeOf((*context.Context)(nil)).Elem()), gomock.AssignableToTypeOf("string"), fullURL).Return("1", nil).MaxTimes(1)
+				r.EXPECT().CreateShortURL(gomock.AssignableToTypeOf(reflect.TypeOf((*context.Context)(nil)).Elem()),
+					gomock.AssignableToTypeOf("string"), fullURL).Return("1", nil).MaxTimes(1)
 			},
 			want: want{
 				contentType: "text/plain; charset=utf-8",
@@ -75,7 +77,7 @@ func TestHandler_createShortURL(t *testing.T) {
 			// Create Request
 			request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tt.body))
 			request = request.WithContext(context.WithValue(request.Context(), userCtx, "12345"))
-			request.Header.Set("Content-Type", tt.contentType)
+			request.Header.Set(contenntTypeHeader, tt.contentType)
 			w := httptest.NewRecorder()
 			handlers.createShortURL(w, request)
 			result := w.Result()
@@ -83,7 +85,7 @@ func TestHandler_createShortURL(t *testing.T) {
 			respBody, _ := io.ReadAll(result.Body)
 
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
-			assert.Equal(t, tt.want.contentType, result.Header.Get("Content-Type"))
+			assert.Equal(t, tt.want.contentType, result.Header.Get(contenntTypeHeader))
 			assert.Equal(t, tt.want.body, string(respBody))
 		})
 	}
@@ -159,7 +161,7 @@ func TestHandler_getByShort(t *testing.T) {
 			respBody, _ := io.ReadAll(result.Body)
 
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
-			assert.Equal(t, tt.want.contentType, result.Header.Get("Content-Type"))
+			assert.Equal(t, tt.want.contentType, result.Header.Get(contenntTypeHeader))
 			assert.Equal(t, tt.want.body, string(respBody))
 		})
 	}

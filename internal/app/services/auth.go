@@ -3,8 +3,9 @@ package services
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/repositories"
 
@@ -24,10 +25,10 @@ type tokenClaims struct {
 func (s *Service) GenerateToken(ctx context.Context) (string, error) {
 	var userID string
 	for {
-		userID = repositories.RandomString()
+		userID = uuid.New().String()
 		if err := s.repo.ValidateUniqueUser(ctx, userID); err != nil {
 			if !errors.Is(err, repositories.ErrUserExists) {
-				return "", fmt.Errorf("service: %w", err)
+				return "", defaultServiceErrWrapper(err)
 			}
 		} else {
 			break
@@ -42,7 +43,7 @@ func (s *Service) GenerateToken(ctx context.Context) (string, error) {
 
 	signedString, err := token.SignedString([]byte(signingKey))
 	if err != nil {
-		return "", fmt.Errorf("service: %w", err)
+		return "", defaultServiceErrWrapper(err)
 	}
 
 	return signedString, nil
@@ -56,7 +57,7 @@ func (s *Service) ParseToken(accessToken string) (string, error) {
 		return []byte(signingKey), nil
 	})
 	if err != nil {
-		return "", fmt.Errorf("service: %w", err)
+		return "", defaultServiceErrWrapper(err)
 	}
 	if !token.Valid {
 		return "", errors.New("service: token is not valid")

@@ -26,8 +26,14 @@ type Repository interface {
 
 type Service struct {
 	logger *zap.Logger
-	cfg    configs.AppConfig
 	repo   Repository
+	cfg    configs.AppConfig
+}
+
+const defaultServiceError = "service:"
+
+func defaultServiceErrWrapper(err error) error {
+	return fmt.Errorf("%s %w", defaultServiceError, err)
 }
 
 func NewService(logger *zap.Logger, cfg configs.AppConfig, repo Repository) *Service {
@@ -43,16 +49,16 @@ func (s *Service) CreateShortURL(ctx context.Context, userID, fullURL string) (s
 			if errors.Is(repoErr, repositories.ErrShortURLExists) {
 				continue
 			}
-			if !errors.Is(repoErr, repositories.ErrorUniqueViolation) {
-				return "", fmt.Errorf("service: %w", repoErr)
+			if !errors.Is(repoErr, repositories.ErrUniqueViolation) {
+				return "", defaultServiceErrWrapper(repoErr)
 			}
 		}
 		shortURL, err := url.JoinPath(s.cfg.BaseURL, shortID)
 		if err != nil {
-			return "", fmt.Errorf("service: %w", err)
+			return "", defaultServiceErrWrapper(err)
 		}
 		if repoErr != nil {
-			return shortURL, fmt.Errorf("service: %w", repoErr)
+			return shortURL, defaultServiceErrWrapper(repoErr)
 		}
 		return shortURL, nil
 	}
@@ -91,7 +97,7 @@ generator:
 			if errors.Is(err, repositories.ErrShortURLExists) {
 				continue
 			}
-			return nil, fmt.Errorf("service: %w", err)
+			return nil, defaultServiceErrWrapper(err)
 		}
 		return res, nil
 	}
@@ -100,7 +106,7 @@ generator:
 func (s *Service) GetFullByID(ctx context.Context, shortURL string) (string, error) {
 	row, err := s.repo.GetByShort(ctx, shortURL)
 	if err != nil {
-		return row, fmt.Errorf("service: %w", err)
+		return row, defaultServiceErrWrapper(err)
 	}
 	return row, nil
 }
@@ -108,7 +114,7 @@ func (s *Service) GetFullByID(ctx context.Context, shortURL string) (string, err
 func (s *Service) GetListByUser(ctx context.Context, userID string) ([]models.GetURLResponse, error) {
 	list, err := s.repo.GetListByUser(ctx, userID)
 	if err != nil {
-		return list, fmt.Errorf("service: %w", err)
+		return list, defaultServiceErrWrapper(err)
 	}
 	return list, nil
 }
@@ -121,7 +127,7 @@ func (s *Service) DeleteUserURLsBatch(ctx context.Context, userID string, data [
 
 func (s *Service) Ping() error {
 	if err := s.repo.Ping(); err != nil {
-		return fmt.Errorf("service: %w", err)
+		return defaultServiceErrWrapper(err)
 	}
 	return nil
 }

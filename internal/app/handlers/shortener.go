@@ -14,7 +14,7 @@ import (
 
 func (h *Handler) createShortURL(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	ct := r.Header.Get("Content-Type")
+	ct := r.Header.Get(contenntTypeHeader)
 	if !strings.HasPrefix(ct, "text/plain") && !strings.HasPrefix(ct, "application/x-gzip") {
 		http.Error(w, "Неверный header запроса", http.StatusBadRequest)
 		return
@@ -30,13 +30,13 @@ func (h *Handler) createShortURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	res, err := h.services.CreateShortURL(ctx, userID, string(body))
-	if err != nil && !errors.Is(err, repositories.ErrorUniqueViolation) {
+	if err != nil && !errors.Is(err, repositories.ErrUniqueViolation) {
 		h.logger.Error("ошибка при создании url", zap.Error(err))
 		http.Error(w, "Неверный запрос", http.StatusBadRequest)
 		return
 	}
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	if errors.Is(err, repositories.ErrorUniqueViolation) {
+	w.Header().Set(contenntTypeHeader, "text/plain; charset=utf-8")
+	if errors.Is(err, repositories.ErrUniqueViolation) {
 		w.WriteHeader(http.StatusConflict)
 	} else {
 		w.WriteHeader(http.StatusCreated)
@@ -58,11 +58,12 @@ func (h *Handler) getByShort(w http.ResponseWriter, r *http.Request) {
 	}
 	res, err := h.services.GetFullByID(ctx, shortURL)
 	if err != nil {
-		if errors.Is(err, repositories.ErrURLNotFound) {
+		switch {
+		case errors.Is(err, repositories.ErrURLNotFound):
 			http.Error(w, err.Error(), http.StatusBadRequest)
-		} else if errors.Is(err, repositories.ErrDeleted) {
+		case errors.Is(err, repositories.ErrDeleted):
 			http.Error(w, err.Error(), http.StatusGone)
-		} else {
+		default:
 			http.Error(w, "Неверный запрос", http.StatusBadRequest)
 		}
 		return
