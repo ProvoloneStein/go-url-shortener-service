@@ -26,12 +26,12 @@ func (h *Handler) createShortURL(w http.ResponseWriter, r *http.Request) {
 	}
 	userID, err := getUserID(ctx)
 	if err != nil {
-		http.Error(w, "ошибка авторизации", http.StatusInternalServerError)
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
 	res, err := h.services.CreateShortURL(ctx, userID, string(body))
 	if err != nil && !errors.Is(err, repositories.ErrUniqueViolation) {
-		h.logger.Error("ошибка при создании url", zap.Error(err))
+		h.logger.Error(defaultServiceError, zap.Error(err))
 		http.Error(w, "Неверный запрос", http.StatusBadRequest)
 		return
 	}
@@ -53,7 +53,7 @@ func (h *Handler) getByShort(w http.ResponseWriter, r *http.Request) {
 	shortURL := chi.URLParam(r, "id")
 	_, err := getUserID(ctx)
 	if err != nil {
-		http.Error(w, "ошибка авторизации", http.StatusInternalServerError)
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
 	res, err := h.services.GetFullByID(ctx, shortURL)

@@ -52,12 +52,12 @@ func (h *Handler) createShortURLByJSON(w http.ResponseWriter, r *http.Request) {
 	}
 	userID, err := getUserID(ctx)
 	if err != nil {
-		http.Error(w, "ошибка авторизации", http.StatusInternalServerError)
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
 	res, err := h.services.CreateShortURL(ctx, userID, requestBody.URL)
 	if err != nil && !errors.Is(err, repositories.ErrUniqueViolation) {
-		h.logger.Error("ошибка при создании url", zap.Error(err))
+		h.logger.Error(defaultServiceError, zap.Error(err))
 		http.Error(w, "неверный запрос", http.StatusBadRequest)
 		return
 	}
@@ -101,12 +101,12 @@ func (h *Handler) batchCreateURLByJSON(w http.ResponseWriter, r *http.Request) {
 	}
 	userID, err := getUserID(ctx)
 	if err != nil {
-		http.Error(w, "ошибка авторизации", http.StatusInternalServerError)
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
 	res, err := h.services.BatchCreate(ctx, userID, requestBody)
 	if err != nil {
-		h.logger.Error("ошибка при создании urls", zap.Error(err))
+		h.logger.Error(defaultServiceError, zap.Error(err))
 		http.Error(w, "Неверный запрос", http.StatusBadRequest)
 		return
 	}
@@ -129,16 +129,17 @@ func (h *Handler) getUserURLs(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	userID, err := getUserID(ctx)
 	if err != nil {
-		http.Error(w, "ошибка авторизации", http.StatusInternalServerError)
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
 	res, err := h.services.GetListByUser(ctx, userID)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
 			http.Error(w, err.Error(), http.StatusNoContent)
-		} else if errors.Is(err, repositories.ErrDeleted) {
+		case errors.Is(err, repositories.ErrDeleted):
 			http.Error(w, err.Error(), http.StatusGone)
-		} else {
+		default:
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 		return
@@ -165,7 +166,7 @@ func (h *Handler) deleteUserURLsBatch(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	userID, err := getUserID(ctx)
 	if err != nil {
-		http.Error(w, "ошибка авторизации", http.StatusInternalServerError)
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
 	body, err := io.ReadAll(r.Body)

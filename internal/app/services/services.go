@@ -66,7 +66,6 @@ func (s *Service) CreateShortURL(ctx context.Context, userID, fullURL string) (s
 
 func (s *Service) BatchCreate(ctx context.Context, userID string,
 	data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
-
 	queryData := make([]models.BatchCreateData, 0, len(data))
 	for dataIndex := range data {
 		shortID := repositories.RandomString()

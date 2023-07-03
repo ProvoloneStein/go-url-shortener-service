@@ -13,9 +13,10 @@ var ErrShortURLExists = errors.New("ShortURLExists")
 var ErrUserExists = errors.New("UserExists")
 
 const (
-	queryErrorMessage = "ошибка при обращении к репозиторию"
+	queryErrorMessage = "ошибка при обращении к бд"
 	defaultRepoError  = "repository:"
 	randomStringSize  = 10
+	txRollbackError   = "transaction rollback error"
 )
 
 func defaultRepoErrWrapper(err error) error {
