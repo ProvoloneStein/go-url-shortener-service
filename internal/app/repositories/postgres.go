@@ -140,11 +140,6 @@ func (r *DBRepository) BatchCreate(ctx context.Context,
 		return nil, defaultRepoErrWrapper(err)
 	}
 
-	defer func() {
-		if errDefer := tx.Commit(); errDefer != nil {
-			r.logger.Error("repository: ошибка при коммите трансакции", zap.Error(errDefer))
-		}
-	}()
 	// генерируем список сокращенных урлов
 	query := "INSERT INTO shortener (url, shorten, correlation_id, user_id) " +
 		"VALUES(:url, :shorten, :correlation_id, :user_id) " +
