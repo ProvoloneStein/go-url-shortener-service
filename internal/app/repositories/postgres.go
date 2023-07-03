@@ -140,6 +140,12 @@ func (r *DBRepository) BatchCreate(ctx context.Context,
 		return nil, defaultRepoErrWrapper(err)
 	}
 
+	for _, val := range data {
+		if err := r.validateUniqueShortURL(ctx, tx, val.ShortURL); err != nil {
+			return []models.BatchCreateResponse{models.BatchCreateResponse{ShortURL: val.ShortURL, UUID: val.UUID}}, err
+		}
+	}
+
 	// генерируем список сокращенных урлов
 	query := "INSERT INTO shortener (url, shorten, correlation_id, user_id) " +
 		"VALUES(:url, :shorten, :correlation_id, :user_id) " +
