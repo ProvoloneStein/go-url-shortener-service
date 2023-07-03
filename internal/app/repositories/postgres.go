@@ -142,6 +142,12 @@ func (r *DBRepository) BatchCreate(ctx context.Context,
 
 	for _, val := range data {
 		if err := r.validateUniqueShortURL(ctx, tx, val.ShortURL); err != nil {
+			defer func() {
+				errDefer := tx.Rollback()
+				if errDefer != nil {
+					r.logger.Error("repository: ошибка при откате трансакции", zap.Error(errDefer))
+				}
+			}()
 			return []models.BatchCreateResponse{models.BatchCreateResponse{ShortURL: val.ShortURL, UUID: val.UUID}}, err
 		}
 	}
