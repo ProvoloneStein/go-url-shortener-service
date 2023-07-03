@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	serverReadTimeout  = 10 * time.Second
-	serverWriteTimeout = 10 * time.Second
+	serverReadTimeout  = 15 * time.Second
+	serverWriteTimeout = 15 * time.Second
 	maxHeaderBytes     = 1 << 20 // 1 MB
 )
 
