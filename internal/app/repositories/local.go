@@ -123,20 +123,6 @@ func (r *LocalRepository) GetListByUser(ctx context.Context, userID string) ([]m
 	return result, nil
 }
 
-func (r *LocalRepository) ValidateUniqueUser(ctx context.Context, userID string) error {
-	select {
-	case <-ctx.Done():
-		return defaultRepoErrWrapper(ctx.Err())
-	default:
-	}
-	for _, val := range r.store {
-		if val[1] == userID {
-			return errWithVal(ErrUserExists, userID)
-		}
-	}
-	return nil
-}
-
 func (r *LocalRepository) DeleteUserURLsBatch(ctx context.Context, userID string, data []string) error {
 	select {
 	case <-ctx.Done():

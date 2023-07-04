@@ -21,6 +21,12 @@ type DBRepository struct {
 	cfg    configs.AppConfig
 }
 
+const (
+	defaultMaxConns      = 200
+	defaultMaxIdleConns  = 10
+	defaultConnsLifetime = 0
+)
+
 func initPG(db *sqlx.DB) error {
 	_, err := db.Exec("CREATE TABLE IF NOT EXISTS shortener " +
 		"(id BIGSERIAL PRIMARY KEY, user_id VARCHAR(256), url VARCHAR(256) UNIQUE NOT NULL, " +
@@ -36,7 +42,9 @@ func connectPG(dsnString string) (*sqlx.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("repository: ошибка при подключении к базе данных: %w", err)
 	}
-
+	db.SetMaxOpenConns(defaultMaxConns)
+	db.SetMaxIdleConns(defaultMaxIdleConns)
+	db.SetConnMaxLifetime(defaultConnsLifetime)
 	err = db.Ping()
 	if err != nil {
 		return nil, fmt.Errorf("repository: ошибка при проверке подключения к базе данных: %w", err)
@@ -309,22 +317,4 @@ func (r *DBRepository) GetListByUser(ctx context.Context, userID string) ([]mode
 		return nil, sql.ErrNoRows
 	}
 	return response, nil
-}
-
-func (r *DBRepository) ValidateUniqueUser(ctx context.Context, userID string) error {
-	var id int
-
-	select {
-	case <-ctx.Done():
-		return defaultRepoErrWrapper(ctx.Err())
-	default:
-	}
-	shortRow := r.db.QueryRowContext(ctx, "SELECT id FROM shortener WHERE user_id = $1", userID)
-	if err := shortRow.Scan(&id); err != nil {
-		if err == sql.ErrNoRows {
-			return nil
-		}
-		return defaultRepoErrWrapper(err)
-	}
-	return errWithVal(ErrUserExists, userID)
 }

@@ -19,7 +19,6 @@ type Repository interface {
 	GetByShort(ctx context.Context, shortURL string) (string, error)
 	GetListByUser(ctx context.Context, userID string) ([]models.GetURLResponse, error)
 	DeleteUserURLsBatch(ctx context.Context, userID string, data []string) error
-	ValidateUniqueUser(ctx context.Context, userID string) error
 	Ping() error
 	Close() error
 }

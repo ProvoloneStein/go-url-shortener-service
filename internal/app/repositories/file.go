@@ -220,17 +220,3 @@ func (r *FileRepository) DeleteUserURLsBatch(ctx context.Context, userID string,
 	}
 	return nil
 }
-
-func (r *FileRepository) ValidateUniqueUser(ctx context.Context, userID string) error {
-	select {
-	case <-ctx.Done():
-		return defaultRepoErrWrapper(ctx.Err())
-	default:
-	}
-	for _, val := range r.store {
-		if val[1] == userID {
-			return errWithVal(ErrUserExists, userID)
-		}
-	}
-	return nil
-}
