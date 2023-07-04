@@ -7,8 +7,6 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/repositories"
-
 	"github.com/golang-jwt/jwt/v4"
 )
 
@@ -22,17 +20,7 @@ type tokenClaims struct {
 }
 
 func (s *Service) GenerateToken(ctx context.Context) (string, error) {
-	var userID string
-	for {
-		userID = uuid.New().String()
-		if err := s.repo.ValidateUniqueUser(ctx, userID); err != nil {
-			if !errors.Is(err, repositories.ErrUserExists) {
-				return "", defaultServiceErrWrapper(err)
-			}
-		} else {
-			break
-		}
-	}
+	userID := uuid.New().String()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &tokenClaims{
 		jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenTTL)),
