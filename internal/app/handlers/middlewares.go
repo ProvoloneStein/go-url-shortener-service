@@ -3,6 +3,7 @@ package handlers
 import (
 	"compress/gzip"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -99,6 +100,9 @@ func userIdentity(services Service, logger *zap.Logger) func(http.Handler) http.
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			cookie, err := r.Cookie("authToken")
 			if err != nil {
+				if !errors.Is(err, http.ErrNoCookie) {
+					logger.Error("ошибка получения токена", zap.Error(err))
+				}
 				val, err := services.GenerateToken(r.Context())
 				if err != nil {
 					logger.Error("ошибка при генерации токена", zap.Error(err))

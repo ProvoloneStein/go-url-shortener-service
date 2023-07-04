@@ -13,8 +13,7 @@ import (
 )
 
 const (
-	signingKey = "qrkjk#4#%35FSFJlja#4353KSFjH"
-	tokenTTL   = 12 * time.Hour
+	tokenTTL = 12 * time.Hour
 )
 
 type tokenClaims struct {
@@ -41,7 +40,7 @@ func (s *Service) GenerateToken(ctx context.Context) (string, error) {
 		userID,
 	})
 
-	signedString, err := token.SignedString([]byte(signingKey))
+	signedString, err := token.SignedString([]byte(s.cfg.SigningKey))
 	if err != nil {
 		return "", defaultServiceErrWrapper(err)
 	}
@@ -54,7 +53,7 @@ func (s *Service) ParseToken(accessToken string) (string, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("service: invalid signing method")
 		}
-		return []byte(signingKey), nil
+		return []byte(s.cfg.SigningKey), nil
 	})
 	if err != nil {
 		return "", defaultServiceErrWrapper(err)

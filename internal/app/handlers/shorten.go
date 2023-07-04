@@ -140,6 +140,7 @@ func (h *Handler) getUserURLs(w http.ResponseWriter, r *http.Request) {
 		case errors.Is(err, repositories.ErrDeleted):
 			http.Error(w, err.Error(), http.StatusGone)
 		default:
+			h.logger.Error(defaultServiceError, zap.Error(err))
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 		return

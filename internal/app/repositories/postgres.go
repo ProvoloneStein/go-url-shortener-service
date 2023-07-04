@@ -276,7 +276,7 @@ func (r *DBRepository) GetListByUser(ctx context.Context, userID string) ([]mode
 		return nil, defaultRepoErrWrapper(ctx.Err())
 	default:
 	}
-	query := "SELECT url, shorten FROM shortener WHERE user_id LIKE $1 and deleted = False"
+	query := "SELECT url, shorten FROM shortener WHERE user_id = $1 and deleted = False"
 	rows, err := r.db.QueryxContext(ctx, query, userID)
 	if err != nil {
 		r.logger.Error(queryErrorMessage, zap.Error(err))
