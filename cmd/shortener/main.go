@@ -34,8 +34,8 @@ func main() {
 			logger.Fatal("ошибка при иницилизации базы данных.", zap.Error(err))
 		}
 		defer func() {
-			if err = repos.Close(); err != nil {
-				logger.Error("ошибка при иницилизации базы данных.", zap.Error(err))
+			if err := repos.Close(); err != nil {
+				logger.Error("ошибка при закрытии подключения базы данных.", zap.Error(err))
 			}
 		}()
 	case config.FileStorage == "":
@@ -46,7 +46,7 @@ func main() {
 			logger.Fatal("ошибка при попытке открытия файла", zap.Error(err))
 		}
 		defer func() {
-			if err = file.Close(); err != nil {
+			if err := file.Close(); err != nil {
 				logger.Error("ошибка при закрытии файлового репозитория.", zap.Error(err))
 			}
 		}()

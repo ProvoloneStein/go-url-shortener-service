@@ -42,7 +42,7 @@ func gzipRead(logger *zap.Logger, r *http.Request) error {
 				// меняем тело запроса на новое
 				r.Body = cr
 				defer func() {
-					if err = cr.Close(); err != nil {
+					if err := cr.Close(); err != nil {
 						logger.Error("gzip reader close err.", zap.Error(err))
 					}
 				}()
@@ -77,7 +77,7 @@ func gzipReadWriterHandler(logger *zap.Logger) func(http.Handler) http.Handler {
 					w.WriteHeader(http.StatusInternalServerError)
 				}
 				defer func() {
-					if err = gz.Close(); err != nil {
+					if err := gz.Close(); err != nil {
 						logger.Error("gzip writer close err.", zap.Error(err))
 					}
 				}()

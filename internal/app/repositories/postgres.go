@@ -32,7 +32,7 @@ func initPG(db *sqlx.DB) error {
 		"(id BIGSERIAL PRIMARY KEY, user_id VARCHAR(256), url VARCHAR(256) UNIQUE NOT NULL, " +
 		"shorten VARCHAR(256) UNIQUE NOT NULL, correlation_id VARCHAR(256), deleted BOOLEAN DEFAULT FALSE)")
 	if err != nil {
-		return fmt.Errorf("repository: ошибка при создании базы данных: %w", err)
+		return fmt.Errorf("ошибка при создании базы данных: %w", err)
 	}
 	return nil
 }
@@ -99,7 +99,7 @@ func (r *DBRepository) Create(ctx context.Context, userID, fullURL, shortURL str
 		defer func() {
 			errDefer := tx.Rollback()
 			if errDefer != nil {
-				err = errDefer
+				r.logger.Error(txRollbackError, zap.Error(errDefer))
 			}
 		}()
 		return "", defaultRepoErrWrapper(err)
