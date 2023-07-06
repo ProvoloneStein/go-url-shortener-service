@@ -3,32 +3,32 @@ package repositories
 import (
 	"context"
 	"errors"
-	"fmt"
+	"net/url"
+
+	"go.uber.org/zap"
+
 	"github.com/ProvoloneStein/go-url-shortener-service/configs"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
-	"go.uber.org/zap"
-	"net/url"
 )
 
 type LocalRepository struct {
 	logger *zap.Logger
+	store  map[string][3]string
 	cfg    configs.AppConfig
-	store  map[string]string
 }
 
 func NewLocalRepository(logger *zap.Logger, cfg configs.AppConfig) *LocalRepository {
 	return &LocalRepository{
 		logger: logger,
 		cfg:    cfg,
-		store:  make(map[string]string),
+		store:  make(map[string][3]string),
 	}
 }
 
 func (r *LocalRepository) validateUniqueShortURL(ctx context.Context, shortURL string) error {
-
 	select {
 	case <-ctx.Done():
-		return ctx.Err()
+		return defaultRepoErrWrapper(ctx.Err())
 	default:
 	}
 	if _, ok := r.store[shortURL]; !ok {
@@ -37,51 +37,49 @@ func (r *LocalRepository) validateUniqueShortURL(ctx context.Context, shortURL s
 	return ErrShortURLExists
 }
 
-func (r *LocalRepository) Create(ctx context.Context, fullURL, shortURL string) (string, error) {
+func (r *LocalRepository) Create(ctx context.Context, userID, fullURL, shortURL string) (string, error) {
 	select {
 	case <-ctx.Done():
-		return "", ctx.Err()
+		return "", defaultRepoErrWrapper(ctx.Err())
 	default:
 	}
 	if err := r.validateUniqueShortURL(ctx, shortURL); err != nil {
 		return "", err
 	}
 	for key, val := range r.store {
-		if val == fullURL {
-			return key, ErrorUniqueViolation
+		if val[0] == fullURL {
+			return key, ErrUniqueViolation
 		}
 	}
-	r.store[shortURL] = fullURL
+	r.store[shortURL] = [3]string{fullURL, userID, "f"}
 	return shortURL, nil
 }
 
-func (r *LocalRepository) BatchCreate(ctx context.Context, data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
-	var response []models.BatchCreateResponse
-
+func (r *LocalRepository) BatchCreate(ctx context.Context,
+	data []models.BatchCreateData) ([]models.BatchCreateResponse, error) {
 	select {
 	case <-ctx.Done():
-		return nil, ctx.Err()
+		return nil, defaultRepoErrWrapper(ctx.Err())
 	default:
 	}
 	for _, val := range data {
-		for {
-			shortID := RandomString()
-			if _, ok := r.store[shortID]; ok {
-				continue
-			}
-			shortURL, err := url.JoinPath(r.cfg.BaseURL, shortID)
-			if err != nil {
-				r.logger.Error("ошибка при формировании url", zap.Error(err))
-				return response, err
-			}
-			_, err = r.Create(ctx, val.URL, shortID)
-			if err != nil && !errors.Is(err, ErrorUniqueViolation) {
-				r.logger.Error("ошибка при записи url", zap.Error(err))
-				return response, err
-			}
-			response = append(response, models.BatchCreateResponse{ShortURL: shortURL, UUID: val.UUID})
-			break
+		if err := r.validateUniqueShortURL(ctx, val.ShortURL); err != nil {
+			return []models.BatchCreateResponse{models.BatchCreateResponse{ShortURL: val.ShortURL, UUID: val.UUID}}, err
 		}
+	}
+	response := make([]models.BatchCreateResponse, 0, len(data))
+	for _, val := range data {
+		shortURL, err := url.JoinPath(r.cfg.BaseURL, val.ShortURL)
+		if err != nil {
+			r.logger.Error("ошибка при формировании url", zap.Error(err))
+			return response, defaultRepoErrWrapper(err)
+		}
+		_, err = r.Create(ctx, val.UserID, val.URL, val.ShortURL)
+		if err != nil && !errors.Is(err, ErrUniqueViolation) {
+			r.logger.Error("ошибка при записи url", zap.Error(err))
+			return response, defaultRepoErrWrapper(err)
+		}
+		response = append(response, models.BatchCreateResponse{ShortURL: shortURL, UUID: val.UUID})
 	}
 	return response, nil
 }
@@ -89,14 +87,17 @@ func (r *LocalRepository) BatchCreate(ctx context.Context, data []models.BatchCr
 func (r *LocalRepository) GetByShort(ctx context.Context, shortURL string) (string, error) {
 	select {
 	case <-ctx.Done():
-		return "", ctx.Err()
+		return "", defaultRepoErrWrapper(ctx.Err())
 	default:
 	}
-	fullURL, ok := r.store[shortURL]
+	data, ok := r.store[shortURL]
 	if ok {
-		return fullURL, nil
+		if data[2] == "t" {
+			return "", ErrDeleted
+		}
+		return data[0], nil
 	}
-	return "", fmt.Errorf("%w: %s", ErrURLNotFound, shortURL)
+	return "", errWithVal(ErrURLNotFound, shortURL)
 }
 
 func (r *LocalRepository) Ping() error {
@@ -104,5 +105,37 @@ func (r *LocalRepository) Ping() error {
 }
 
 func (r *LocalRepository) Close() error {
+	return nil
+}
+
+func (r *LocalRepository) GetListByUser(ctx context.Context, userID string) ([]models.GetURLResponse, error) {
+	var result []models.GetURLResponse
+	select {
+	case <-ctx.Done():
+		return nil, defaultRepoErrWrapper(ctx.Err())
+	default:
+	}
+	for key, val := range r.store {
+		if userID == val[1] && val[2] == "f" {
+			result = append(result, models.GetURLResponse{ShortURL: key, URL: val[0]})
+		}
+	}
+	return result, nil
+}
+
+func (r *LocalRepository) DeleteUserURLsBatch(ctx context.Context, userID string, data []string) error {
+	select {
+	case <-ctx.Done():
+		return defaultRepoErrWrapper(ctx.Err())
+	default:
+	}
+	for _, short := range data {
+		row, ok := r.store[short]
+		if ok {
+			if row[1] == userID {
+				row[2] = "t"
+			}
+		}
+	}
 	return nil
 }

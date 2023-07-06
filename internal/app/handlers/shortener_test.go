@@ -3,28 +3,29 @@ package handlers
 import (
 	"context"
 	"fmt"
-	mock_handlers "github.com/ProvoloneStein/go-url-shortener-service/internal/app/handlers/mocks"
-	"github.com/go-chi/chi/v5"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
+
+	mock_handlers "github.com/ProvoloneStein/go-url-shortener-service/internal/app/handlers/mocks"
 )
 
 func TestHandler_createShortURL(t *testing.T) {
-
 	// Init Test Table
 	type mockBehavior func(r *mock_handlers.MockService, fullURL string)
 
 	type want struct {
 		contentType string
-		statusCode  int
 		body        string
+		statusCode  int
 	}
 
 	tests := []struct {
@@ -39,7 +40,8 @@ func TestHandler_createShortURL(t *testing.T) {
 			contentType: "type",
 			body:        "https://ya.ru",
 			mockBehavior: func(r *mock_handlers.MockService, fullURL string) {
-				r.EXPECT().CreateShortURL(gomock.AssignableToTypeOf(reflect.TypeOf((*context.Context)(nil)).Elem()), fullURL).Return("123", nil).MaxTimes(1)
+				r.EXPECT().CreateShortURL(gomock.AssignableToTypeOf(reflect.TypeOf((*context.Context)(nil)).Elem()),
+					gomock.AssignableToTypeOf("string"), fullURL).Return("123", nil).MaxTimes(1)
 			},
 			want: want{
 				contentType: "text/plain; charset=utf-8",
@@ -52,7 +54,8 @@ func TestHandler_createShortURL(t *testing.T) {
 			contentType: "text/plain",
 			body:        "https://ya.ru",
 			mockBehavior: func(r *mock_handlers.MockService, fullURL string) {
-				r.EXPECT().CreateShortURL(gomock.AssignableToTypeOf(reflect.TypeOf((*context.Context)(nil)).Elem()), fullURL).Return("1", nil).MaxTimes(1)
+				r.EXPECT().CreateShortURL(gomock.AssignableToTypeOf(reflect.TypeOf((*context.Context)(nil)).Elem()),
+					gomock.AssignableToTypeOf("string"), fullURL).Return("1", nil).MaxTimes(1)
 			},
 			want: want{
 				contentType: "text/plain; charset=utf-8",
@@ -73,7 +76,8 @@ func TestHandler_createShortURL(t *testing.T) {
 
 			// Create Request
 			request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tt.body))
-			request.Header.Set("Content-Type", tt.contentType)
+			request = request.WithContext(context.WithValue(request.Context(), userCtx, "12345"))
+			request.Header.Set(contenntTypeHeader, tt.contentType)
 			w := httptest.NewRecorder()
 			handlers.createShortURL(w, request)
 			result := w.Result()
@@ -81,16 +85,15 @@ func TestHandler_createShortURL(t *testing.T) {
 			respBody, _ := io.ReadAll(result.Body)
 
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
-			assert.Equal(t, tt.want.contentType, result.Header.Get("Content-Type"))
+			assert.Equal(t, tt.want.contentType, result.Header.Get(contenntTypeHeader))
 			assert.Equal(t, tt.want.body, string(respBody))
 		})
 	}
 }
 
 func TestHandler_getByShort(t *testing.T) {
-
 	// Init Test Table
-	type mockBehavior func(r *mock_handlers.MockService, fullURL string)
+	type mockBehavior func(r *mock_handlers.MockService, shortURL string)
 
 	type want struct {
 		statusCode  int
@@ -150,6 +153,7 @@ func TestHandler_getByShort(t *testing.T) {
 			router.URLParams.Add("id", tt.id)
 
 			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, router))
+			request = request.WithContext(context.WithValue(request.Context(), userCtx, "12345"))
 
 			handlers.getByShort(w, request)
 			result := w.Result()
@@ -157,7 +161,7 @@ func TestHandler_getByShort(t *testing.T) {
 			respBody, _ := io.ReadAll(result.Body)
 
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
-			assert.Equal(t, tt.want.contentType, result.Header.Get("Content-Type"))
+			assert.Equal(t, tt.want.contentType, result.Header.Get(contenntTypeHeader))
 			assert.Equal(t, tt.want.body, string(respBody))
 		})
 	}
