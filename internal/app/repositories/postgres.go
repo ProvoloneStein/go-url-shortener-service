@@ -40,7 +40,7 @@ func initPG(db *sqlx.DB) error {
 func connectPG(dsnString string) (*sqlx.DB, error) {
 	db, err := sqlx.Open("pgx", dsnString)
 	if err != nil {
-		return nil, fmt.Errorf("repository: ошибка при подключении к базе данных: %w", err)
+		return nil, fmt.Errorf("ошибка при подключении к базе данных: %w", err)
 	}
 	db.SetMaxOpenConns(defaultMaxConns)
 	db.SetMaxIdleConns(defaultMaxIdleConns)
