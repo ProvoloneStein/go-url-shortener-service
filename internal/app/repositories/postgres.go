@@ -47,7 +47,7 @@ func connectPG(dsnString string) (*sqlx.DB, error) {
 	db.SetConnMaxLifetime(defaultConnsLifetime)
 	err = db.Ping()
 	if err != nil {
-		return nil, fmt.Errorf("repository: ошибка при проверке подключения к базе данных: %w", err)
+		return nil, fmt.Errorf("ошибка при проверке подключения к базе данных: %w", err)
 	}
 	return db, nil
 }
