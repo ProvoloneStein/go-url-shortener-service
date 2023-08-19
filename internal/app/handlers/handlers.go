@@ -2,10 +2,10 @@ package handlers
 
 import (
 	"context"
-	"github.com/go-chi/chi/v5/middleware"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"go.uber.org/zap"
 
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
