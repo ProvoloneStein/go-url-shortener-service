@@ -1,22 +1,22 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	mock_handlers "github.com/ProvoloneStein/go-url-shortener-service/internal/app/handlers/mocks"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/repositories"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
-	"strings"
 	"testing"
 )
 
-func TestHandler_CreateShortURL(t *testing.T) {
+func TestHandler_CreateShortURLByJSON(t *testing.T) {
 	// Init Test Table
 	type mockBehavior func(r *mock_handlers.MockService, userID, fullURL string)
 
@@ -28,7 +28,7 @@ func TestHandler_CreateShortURL(t *testing.T) {
 
 	tests := []struct {
 		name         string
-		body         string
+		body         map[string]string
 		userID       string
 		mockBehavior mockBehavior
 		contentType  string
@@ -36,9 +36,11 @@ func TestHandler_CreateShortURL(t *testing.T) {
 	}{
 		{
 			name:        "Wrong Content Type",
-			contentType: "application/json",
+			contentType: "text/plain",
 			userID:      "123",
-			body:        "https://ya.ru",
+			body: map[string]string{
+				"url": "https://ya.ru",
+			},
 			mockBehavior: func(r *mock_handlers.MockService, userID, fullURL string) {
 				r.EXPECT().CreateShortURL(gomock.AssignableToTypeOf(reflect.TypeOf((*context.Context)(nil)).Elem()),
 					userID, fullURL).Return("123", nil).MaxTimes(1)
@@ -51,15 +53,17 @@ func TestHandler_CreateShortURL(t *testing.T) {
 		},
 		{
 			name:        "err ErrUniqueViolation",
-			contentType: "text/plain",
+			contentType: contentTypeJSON,
 			userID:      "31",
-			body:        "https://ya.ru",
+			body: map[string]string{
+				"url": "https://ya.ru",
+			},
 			mockBehavior: func(r *mock_handlers.MockService, userID, fullURL string) {
 				r.EXPECT().CreateShortURL(gomock.AssignableToTypeOf(reflect.TypeOf((*context.Context)(nil)).Elem()),
 					userID, fullURL).Return("123", repositories.ErrUniqueViolation).MaxTimes(1)
 			},
 			want: want{
-				contentType: "text/plain; charset=utf-8",
+				contentType: contentTypeJSON,
 				statusCode:  409,
 				body:        "123",
 			},
@@ -67,23 +71,27 @@ func TestHandler_CreateShortURL(t *testing.T) {
 		{
 			name:        "err noAuth",
 			userID:      "",
-			contentType: "text/plain",
-			body:        "https://ya.ru",
+			contentType: contentTypeJSON,
+			body: map[string]string{
+				"url": "https://ya.ru",
+			},
 			mockBehavior: func(r *mock_handlers.MockService, userID, fullURL string) {
 				r.EXPECT().CreateShortURL(gomock.AssignableToTypeOf(reflect.TypeOf((*context.Context)(nil)).Elem()),
 					userID, fullURL).Return("123", repositories.ErrUniqueViolation).MaxTimes(1)
 			},
 			want: want{
-				contentType: "text/plain; charset=utf-8",
-				statusCode:  401,
-				body:        "Unauthorized\n",
+				contentType: contentTypeJSON,
+				statusCode:  409,
+				body:        "123",
 			},
 		},
 		{
 			name:        "custome service err",
-			contentType: "text/plain",
+			contentType: contentTypeJSON,
 			userID:      "321",
-			body:        "https://ya.ru",
+			body: map[string]string{
+				"url": "https://ya.ru",
+			},
 			mockBehavior: func(r *mock_handlers.MockService, userID, fullURL string) {
 				r.EXPECT().CreateShortURL(gomock.AssignableToTypeOf(reflect.TypeOf((*context.Context)(nil)).Elem()),
 					userID, fullURL).Return("123", errors.New("custome err")).MaxTimes(1)
@@ -91,20 +99,21 @@ func TestHandler_CreateShortURL(t *testing.T) {
 			want: want{
 				contentType: "text/plain; charset=utf-8",
 				statusCode:  400,
-				body:        "Неверный запрос\n",
+				body:        "неверный запрос\n",
 			},
 		},
 		{
 			name:        "Good test",
-			contentType: "text/plain",
-			userID:      "321",
-			body:        "https://ya.ru",
+			contentType: contentTypeJSON,
+			body: map[string]string{
+				"url": "https://ya.ru",
+			},
 			mockBehavior: func(r *mock_handlers.MockService, userID, fullURL string) {
 				r.EXPECT().CreateShortURL(gomock.AssignableToTypeOf(reflect.TypeOf((*context.Context)(nil)).Elem()),
 					userID, fullURL).Return("1", nil).MaxTimes(1)
 			},
 			want: want{
-				contentType: "text/plain; charset=utf-8",
+				contentType: contentTypeJSON,
 				statusCode:  201,
 				body:        "1",
 			},
@@ -117,24 +126,24 @@ func TestHandler_CreateShortURL(t *testing.T) {
 			c := gomock.NewController(t)
 			defer c.Finish()
 			mockServices := mock_handlers.NewMockService(c)
-			tt.mockBehavior(mockServices, tt.userID, tt.body)
+			tt.mockBehavior(mockServices, tt.userID, tt.body["url"])
 			handlers := Handler{logger: zap.NewNop(), services: mockServices}
 
 			// Create Request
-			request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tt.body))
-			if tt.userID != "" {
-				request = request.WithContext(context.WithValue(request.Context(), userCtx, tt.userID))
-			}
+			// Create Request
+			data, err := json.Marshal(tt.body)
+			assert.NoError(t, err)
+
+			request := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(data))
+			request = request.WithContext(context.WithValue(request.Context(), userCtx, tt.userID))
 			request.Header.Set(contenntTypeHeader, tt.contentType)
 			w := httptest.NewRecorder()
-			handlers.CreateShortURL(w, request)
+			handlers.CreateShortURLByJSON(w, request)
 			result := w.Result()
 			defer result.Body.Close()
-			respBody, _ := io.ReadAll(result.Body)
 
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
 			assert.Equal(t, tt.want.contentType, result.Header.Get(contenntTypeHeader))
-			assert.Equal(t, tt.want.body, string(respBody))
 		})
 	}
 }

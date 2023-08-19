@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"github.com/go-chi/chi/v5/middleware"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -39,18 +40,20 @@ func (h *Handler) InitHandler() *chi.Mux {
 	router.Use(logger.RequestLogger(h.logger))
 	router.Use(gzipReadWriterHandler(h.logger))
 	router.Use(userIdentity(h.services, h.logger))
+	router.Mount("/debug", middleware.Profiler())
 	router.Get("/ping", h.pingDB)
-	router.Post("/", h.createShortURL)
-	router.Get("/{id}", h.getByShort)
+
+	router.Post("/", h.CreateShortURL)
+	router.Get("/{id}", h.GetByShort)
 
 	router.Route("/api", func(r chi.Router) {
 		r.Route("/shorten", func(r chi.Router) {
-			r.Post("/", h.createShortURLByJSON)
-			r.Post("/batch", h.batchCreateURLByJSON)
+			r.Post("/", h.CreateShortURLByJSON)
+			r.Post("/batch", h.BatchCreateURLByJSON)
 		})
 		r.Route("/user", func(r chi.Router) {
-			r.Get("/urls", h.getUserURLs)
-			r.Delete("/urls", h.deleteUserURLsBatch)
+			r.Get("/urls", h.GetUserURLs)
+			r.Delete("/urls", h.DeleteUserURLsBatch)
 		})
 	})
 

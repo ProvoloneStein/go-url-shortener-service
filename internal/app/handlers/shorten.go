@@ -28,7 +28,7 @@ const (
 	contentTypeJSON = "application/json"
 )
 
-func (h *Handler) createShortURLByJSON(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) CreateShortURLByJSON(w http.ResponseWriter, r *http.Request) {
 	var requestBody requestData
 
 	ctx := r.Context()
@@ -81,7 +81,7 @@ func (h *Handler) createShortURLByJSON(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) batchCreateURLByJSON(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) BatchCreateURLByJSON(w http.ResponseWriter, r *http.Request) {
 	var requestBody []models.BatchCreateRequest
 
 	ctx := r.Context()
@@ -125,7 +125,7 @@ func (h *Handler) batchCreateURLByJSON(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) getUserURLs(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetUserURLs(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	userID, err := getUserID(ctx)
 	if err != nil {
@@ -161,7 +161,7 @@ func (h *Handler) getUserURLs(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) deleteUserURLsBatch(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) DeleteUserURLsBatch(w http.ResponseWriter, r *http.Request) {
 	var reqBody []string
 
 	ctx := r.Context()

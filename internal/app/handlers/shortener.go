@@ -12,7 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func (h *Handler) createShortURL(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) CreateShortURL(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	ct := r.Header.Get(contenntTypeHeader)
 	if !strings.HasPrefix(ct, "text/plain") && !strings.HasPrefix(ct, "application/x-gzip") {
@@ -48,7 +48,7 @@ func (h *Handler) createShortURL(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) getByShort(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetByShort(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	shortURL := chi.URLParam(r, "id")
 	_, err := getUserID(ctx)

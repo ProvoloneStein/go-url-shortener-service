@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 )
 
 const defaultServiceError = "service error:"
@@ -16,7 +15,7 @@ func getUserID(ctx context.Context) (string, error) {
 	}
 	id, ok := value.(string)
 	if !ok {
-		return "", fmt.Errorf("user id is of invalid type %T", reflect.TypeOf(value))
+		return "", fmt.Errorf("user id is of invalid type %T", value)
 	}
 	return id, nil
 }
