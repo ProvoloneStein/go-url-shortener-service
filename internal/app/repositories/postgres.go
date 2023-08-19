@@ -5,25 +5,34 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/ProvoloneStein/go-url-shortener-service/configs"
-	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
+	"net/url"
+
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap"
-	"net/url"
+
+	"github.com/ProvoloneStein/go-url-shortener-service/configs"
+	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
 )
 
 type DBRepository struct {
 	logger *zap.Logger
-	cfg    configs.AppConfig
 	db     *sqlx.DB
+	cfg    configs.AppConfig
 }
+
+const (
+	defaultMaxConns      = 200
+	defaultMaxIdleConns  = 10
+	defaultConnsLifetime = 0
+)
 
 func initPG(db *sqlx.DB) error {
 	_, err := db.Exec("CREATE TABLE IF NOT EXISTS shortener " +
-		"(id BIGSERIAL PRIMARY KEY, user_id VARCHAR(256), url VARCHAR(256) UNIQUE NOT NULL, shorten VARCHAR(256) UNIQUE NOT NULL, correlation_id VARCHAR(256))")
+		"(id BIGSERIAL PRIMARY KEY, user_id VARCHAR(256), url VARCHAR(256) UNIQUE NOT NULL, " +
+		"shorten VARCHAR(256) UNIQUE NOT NULL, correlation_id VARCHAR(256), deleted BOOLEAN DEFAULT FALSE)")
 	if err != nil {
-		return fmt.Errorf("ошибка при создании базы данных: %s", err)
+		return fmt.Errorf("ошибка при создании базы данных: %w", err)
 	}
 	return nil
 }
@@ -31,12 +40,14 @@ func initPG(db *sqlx.DB) error {
 func connectPG(dsnString string) (*sqlx.DB, error) {
 	db, err := sqlx.Open("pgx", dsnString)
 	if err != nil {
-		return nil, fmt.Errorf("ошибка при подключении к базе данных: %s", err)
+		return nil, fmt.Errorf("ошибка при подключении к базе данных: %w", err)
 	}
-
+	db.SetMaxOpenConns(defaultMaxConns)
+	db.SetMaxIdleConns(defaultMaxIdleConns)
+	db.SetConnMaxLifetime(defaultConnsLifetime)
 	err = db.Ping()
 	if err != nil {
-		return nil, fmt.Errorf("ошибка при подключении к базе данных: %s", err)
+		return nil, fmt.Errorf("ошибка при проверке подключения к базе данных: %w", err)
 	}
 	return db, nil
 }
@@ -44,10 +55,10 @@ func connectPG(dsnString string) (*sqlx.DB, error) {
 func NewDBRepository(logger *zap.Logger, cfg configs.AppConfig) (*DBRepository, error) {
 	db, err := connectPG(cfg.DatabaseDSN)
 	if err != nil {
-		return nil, err
+		return nil, defaultRepoErrWrapper(err)
 	}
 	if err := initPG(db); err != nil {
-		return nil, fmt.Errorf("ошибка при запросе к бд: %s", err)
+		return nil, defaultRepoErrWrapper(err)
 	}
 	return &DBRepository{logger: logger, cfg: cfg, db: db}, nil
 }
@@ -57,7 +68,7 @@ func (r *DBRepository) validateUniqueShortURL(ctx context.Context, tx *sqlx.Tx, 
 
 	select {
 	case <-ctx.Done():
-		return ctx.Err()
+		return defaultRepoErrWrapper(ctx.Err())
 	default:
 	}
 	shortRow := tx.QueryRowContext(ctx, "SELECT id FROM shortener WHERE  shorten = $1", shortURL)
@@ -65,9 +76,9 @@ func (r *DBRepository) validateUniqueShortURL(ctx context.Context, tx *sqlx.Tx, 
 		if err == sql.ErrNoRows {
 			return nil
 		}
-		return fmt.Errorf("ошибка при запросе к бд: %s", err)
+		return defaultRepoErrWrapper(err)
 	}
-	return fmt.Errorf("%w: %s", ErrShortURLExists, shortURL)
+	return errWithVal(ErrShortURLExists, shortURL)
 }
 
 func (r *DBRepository) Create(ctx context.Context, userID, fullURL, shortURL string) (string, error) {
@@ -75,92 +86,168 @@ func (r *DBRepository) Create(ctx context.Context, userID, fullURL, shortURL str
 
 	select {
 	case <-ctx.Done():
-		return "", ctx.Err()
+		return "", defaultRepoErrWrapper(ctx.Err())
 	default:
 	}
 
 	tx, err := r.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return "", err
+		return "", defaultRepoErrWrapper(err)
 	}
-	defer tx.Commit()
 
 	if err := r.validateUniqueShortURL(ctx, tx, shortURL); err != nil {
-		tx.Rollback()
-		return "", err
+		defer func() {
+			errDefer := tx.Rollback()
+			if errDefer != nil {
+				r.logger.Error(txRollbackError, zap.Error(errDefer))
+			}
+		}()
+		return "", defaultRepoErrWrapper(err)
 	}
-	res := tx.QueryRowContext(ctx, "INSERT INTO shortener (url, shorten, user_id) VALUES($1, $2, $3) ON CONFLICT(url) DO UPDATE SET shorten = shortener.shorten RETURNING shorten", fullURL, shortURL, userID)
+	query := "INSERT INTO shortener (url, shorten, user_id) VALUES($1, $2, $3) " +
+		"ON CONFLICT(url) DO UPDATE SET shorten = shortener.shorten RETURNING shorten"
+	res := tx.QueryRowxContext(ctx, query, fullURL, shortURL, userID)
 	if err := res.Scan(&shortRes); err != nil {
-		tx.Rollback()
-		return "", err
+		defer func() {
+			if errDefer := tx.Rollback(); errDefer != nil {
+				r.logger.Error(txRollbackError, zap.Error(errDefer))
+			}
+		}()
+		return "", defaultRepoErrWrapper(err)
 	}
 
 	if shortRes != shortURL {
-		tx.Rollback()
-		return shortRes, ErrorUniqueViolation
+		defer func() {
+			errDefer := tx.Rollback()
+			if errDefer != nil {
+				r.logger.Error(txRollbackError, zap.Error(errDefer))
+			}
+		}()
+		return shortRes, ErrUniqueViolation
 	}
-
-	return shortRes, tx.Commit()
+	if err := tx.Commit(); err != nil {
+		r.logger.Error(txRollbackError, zap.Error(err))
+		return "", defaultRepoErrWrapper(err)
+	}
+	return shortRes, nil
 }
 
-func (r *DBRepository) BatchCreate(ctx context.Context, data []models.BatchCreateData) ([]models.BatchCreateResponse, error) {
+func (r *DBRepository) BatchCreate(ctx context.Context,
+	data []models.BatchCreateData) ([]models.BatchCreateResponse, error) {
 	var response []models.BatchCreateResponse
 
 	select {
 	case <-ctx.Done():
-		return nil, ctx.Err()
+		return nil, defaultRepoErrWrapper(ctx.Err())
 	default:
 	}
 
 	tx, err := r.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return nil, err
+		return nil, defaultRepoErrWrapper(err)
 	}
 
-	defer tx.Commit()
+	for _, val := range data {
+		if err := r.validateUniqueShortURL(ctx, tx, val.ShortURL); err != nil {
+			if errDefer := tx.Rollback(); errDefer != nil {
+				r.logger.Error(txRollbackError, zap.Error(errDefer))
+			}
+			return []models.BatchCreateResponse{models.BatchCreateResponse{ShortURL: val.ShortURL, UUID: val.UUID}}, err
+		}
+	}
+
 	// генерируем список сокращенных урлов
-	query := "INSERT INTO shortener (url, shorten, correlation_id, user_id) VALUES(:url, :shorten, :correlation_id, :user_id) ON CONFLICT(url)  DO UPDATE SET shorten = shortener.shorten RETURNING shorten, correlation_id"
+	query := "INSERT INTO shortener (url, shorten, correlation_id, user_id) " +
+		"VALUES(:url, :shorten, :correlation_id, :user_id) " +
+		"ON CONFLICT(url)  DO UPDATE SET shorten = shortener.shorten RETURNING shorten, correlation_id"
 	// создаем
 	rows, err := tx.NamedQuery(query, data)
 	if err != nil {
-		tx.Rollback()
-		r.logger.Error("ошибка при запросе к бд", zap.Error(err))
-		return nil, fmt.Errorf("ошибка при запросе к бд: %s", err)
+		defer func() {
+			errDefer := tx.Rollback()
+			if errDefer != nil {
+				r.logger.Error(txRollbackError, zap.Error(errDefer))
+			}
+		}()
+		r.logger.Error(queryErrorMessage, zap.Error(err))
+		return nil, defaultRepoErrWrapper(err)
 	}
-	defer rows.Close()
+	defer func() {
+		errDefer := rows.Close()
+		if errDefer != nil {
+			err = errDefer
+		}
+	}()
 	// обрабатываем ответ
 	for rows.Next() {
 		var row = models.BatchCreateResponse{}
 		if err := rows.StructScan(&row); err != nil {
-			return nil, tx.Rollback()
+			defer func() {
+				errDefer := tx.Rollback()
+				if errDefer != nil {
+					r.logger.Error(txRollbackError, zap.Error(errDefer))
+				}
+			}()
+			return nil, defaultRepoErrWrapper(err)
 		}
 		row.ShortURL, err = url.JoinPath(r.cfg.BaseURL, row.ShortURL)
 		if err != nil {
-			tx.Rollback()
-			r.logger.Error("ошибка при формировании ответа", zap.Error(err))
-			return nil, err
+			r.logger.Error(defaultRepoError, zap.Error(err))
+			defer func() {
+				errDefer := tx.Rollback()
+				if errDefer != nil {
+					r.logger.Error(txRollbackError, zap.Error(errDefer))
+				}
+			}()
+			return nil, defaultRepoErrWrapper(err)
 		}
 		response = append(response, row)
 	}
 
 	if err := rows.Err(); err != nil {
-		tx.Rollback()
-		r.logger.Error("ошибка при формировании ответа", zap.Error(err))
-		return nil, err
+		r.logger.Error(defaultRepoError, zap.Error(err))
+		defer func() {
+			errDefer := tx.Rollback()
+			if errDefer != nil {
+				r.logger.Error(txRollbackError, zap.Error(errDefer))
+			}
+		}()
+		return nil, defaultRepoErrWrapper(err)
 	}
 
-	return response, tx.Commit()
+	if err := tx.Commit(); err != nil {
+		r.logger.Error(txRollbackError, zap.Error(err))
+		return nil, defaultRepoErrWrapper(err)
+	}
+	return response, nil
 }
 
-func (r *DBRepository) GetByShort(ctx context.Context, shortURL string) (string, error) {
+func (r *DBRepository) BatchDelete(ctx context.Context, shortURL string) (string, error) {
 	var fullURL string
 	row := r.db.QueryRowContext(ctx, "SELECT url FROM shortener WHERE  shorten = $1", shortURL)
 	if err := row.Scan(&fullURL); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return "", fmt.Errorf("%w: %s", ErrURLNotFound, shortURL)
+			return "", errWithVal(ErrURLNotFound, shortURL)
 		}
-		r.logger.Error("ошибка при формировании ответа", zap.Error(err))
-		return "", fmt.Errorf("ошибка при формировании ответа: %s", err)
+		r.logger.Error(defaultRepoError, zap.Error(err))
+		return "", defaultRepoErrWrapper(err)
+	}
+	return fullURL, nil
+}
+
+func (r *DBRepository) GetByShort(ctx context.Context, shortURL string) (string, error) {
+	var fullURL string
+	var deleted bool
+	row := r.db.QueryRowContext(ctx, "SELECT url, deleted FROM shortener WHERE  shorten = $1", shortURL)
+	if err := row.Scan(&fullURL, &deleted); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", errWithVal(ErrURLNotFound, shortURL)
+		}
+		r.logger.Error(defaultRepoError, zap.Error(err))
+		return "", defaultRepoErrWrapper(err)
+	}
+	if deleted {
+		return "", ErrDeleted
 	}
 	return fullURL, nil
 }
@@ -168,66 +255,66 @@ func (r *DBRepository) GetByShort(ctx context.Context, shortURL string) (string,
 func (r *DBRepository) Ping() error {
 	err := r.db.Ping()
 	if err != nil {
-		return fmt.Errorf("ошибка при запросе к бд: %s", err)
+		return defaultRepoErrWrapper(err)
 	}
 	return nil
 }
 
 func (r *DBRepository) Close() error {
-	return r.db.Close()
+	if err := r.db.Close(); err != nil {
+		return defaultRepoErrWrapper(err)
+	}
+	return nil
+}
+
+func (r *DBRepository) DeleteUserURLsBatch(ctx context.Context, userID string, data []string) error {
+	query := "UPDATE shortener set deleted = True WHERE user_id = $1 and shorten = any ($2::text[])"
+	_, err := r.db.ExecContext(ctx, query, userID, data)
+	if err != nil {
+		r.logger.Error(queryErrorMessage, zap.Error(err))
+		return defaultRepoErrWrapper(err)
+	}
+	return nil
 }
 
 func (r *DBRepository) GetListByUser(ctx context.Context, userID string) ([]models.GetURLResponse, error) {
 	var response []models.GetURLResponse
 	select {
 	case <-ctx.Done():
-		return nil, ctx.Err()
+		return nil, defaultRepoErrWrapper(ctx.Err())
 	default:
 	}
-	query := "SELECT url, shorten FROM shortener WHERE user_id LIKE $1"
+	query := "SELECT url, shorten FROM shortener WHERE user_id = $1 and deleted = False"
 	rows, err := r.db.QueryxContext(ctx, query, userID)
 	if err != nil {
-		r.logger.Error("ошибка при запросе к бд", zap.Error(err))
-		return nil, fmt.Errorf("ошибка при запросе к бд: %s", err)
+		r.logger.Error(queryErrorMessage, zap.Error(err))
+		return nil, defaultRepoErrWrapper(err)
 	}
-	defer rows.Close()
-	//обрабатываем ответ
+	defer func() {
+		errDefer := rows.Close()
+		if errDefer != nil {
+			err = errDefer
+		}
+	}()
+	// обрабатываем ответ
 	for rows.Next() {
 		var row = models.GetURLResponse{}
 		if err := rows.StructScan(&row); err != nil {
-			return nil, err
+			return nil, defaultRepoErrWrapper(err)
 		}
 		row.ShortURL, err = url.JoinPath(r.cfg.BaseURL, row.ShortURL)
 		if err != nil {
-			r.logger.Error("ошибка при формировании ответа", zap.Error(err))
-			return nil, err
+			r.logger.Error("repository: ошибка при формировании ответа", zap.Error(err))
+			return nil, defaultRepoErrWrapper(err)
 		}
 		response = append(response, row)
 	}
 	if err := rows.Err(); err != nil {
-		r.logger.Error("ошибка при формировании ответа", zap.Error(err))
-		return nil, err
+		r.logger.Error("repository: ошибка при формировании ответа", zap.Error(err))
+		return nil, defaultRepoErrWrapper(err)
 	}
 	if response == nil {
 		return nil, sql.ErrNoRows
 	}
 	return response, nil
-}
-
-func (r *DBRepository) ValidateUniqueUser(ctx context.Context, userID string) error {
-	var id int
-
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	default:
-	}
-	shortRow := r.db.QueryRowContext(ctx, "SELECT id FROM shortener WHERE user_id = $1", userID)
-	if err := shortRow.Scan(&id); err != nil {
-		if err == sql.ErrNoRows {
-			return nil
-		}
-		return fmt.Errorf("ошибка при запросе к бд: %s", err)
-	}
-	return fmt.Errorf("%w: %s", ErrUserExists, userID)
 }

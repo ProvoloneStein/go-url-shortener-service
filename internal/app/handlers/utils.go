@@ -3,12 +3,20 @@ package handlers
 import (
 	"context"
 	"errors"
+	"fmt"
+	"reflect"
 )
 
+const defaultServiceError = "service error:"
+
 func getUserID(ctx context.Context) (string, error) {
-	id, ok := ctx.Value(userCtx).(string)
+	value := ctx.Value(userCtx)
+	if value == nil {
+		return "", errors.New("nil token")
+	}
+	id, ok := value.(string)
 	if !ok {
-		return "", errors.New("user id is of invalid type")
+		return "", fmt.Errorf("user id is of invalid type %T", reflect.TypeOf(value))
 	}
 	return id, nil
 }

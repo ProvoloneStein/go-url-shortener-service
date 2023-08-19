@@ -2,19 +2,24 @@ package handlers
 
 import (
 	"context"
-	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
-	"github.com/ProvoloneStein/go-url-shortener-service/internal/logger"
+	"net/http"
+
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
-	"net/http"
+
+	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
+	"github.com/ProvoloneStein/go-url-shortener-service/internal/logger"
 )
+
+const contenntTypeHeader = "Content-Type"
 
 //go:generate mockgen -source=handlers.go -destination=mocks/mock.go
 type Service interface {
 	CreateShortURL(ctx context.Context, userID, fullURL string) (string, error)
 	BatchCreate(ctx context.Context, userID string, data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error)
-	GetFullByID(ctx context.Context, userID, shortURL string) (string, error)
+	GetFullByID(ctx context.Context, shortURL string) (string, error)
 	GetListByUser(ctx context.Context, userID string) ([]models.GetURLResponse, error)
+	DeleteUserURLsBatch(ctx context.Context, userID string, data []string)
 	GenerateToken(ctx context.Context) (string, error)
 	ParseToken(accessToken string) (string, error)
 	Ping() error
@@ -45,6 +50,7 @@ func (h *Handler) InitHandler() *chi.Mux {
 		})
 		r.Route("/user", func(r chi.Router) {
 			r.Get("/urls", h.getUserURLs)
+			r.Delete("/urls", h.deleteUserURLsBatch)
 		})
 	})
 

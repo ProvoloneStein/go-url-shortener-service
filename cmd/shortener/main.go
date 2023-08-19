@@ -2,19 +2,20 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"os"
+
+	"go.uber.org/zap"
+
 	"github.com/ProvoloneStein/go-url-shortener-service/configs"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/handlers"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/repositories"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/server"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/services"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/logger"
-	"go.uber.org/zap"
-	"os"
 )
 
-import (
-	"log"
-)
+const filePerms = 0600
 
 func main() {
 	config, err := configs.InitConfig()
@@ -26,23 +27,32 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if config.DatabaseDSN != "" {
+	switch {
+	case config.DatabaseDSN != "":
 		repos, err = repositories.NewDBRepository(logger, config)
 		if err != nil {
-			logger.Fatal("ошибка при иницилизации репозитория.", zap.Error(err))
+			logger.Fatal("ошибка при иницилизации базы данных.", zap.Error(err))
 		}
-		defer repos.Close()
-	} else if config.FileStorage == "" {
+		defer func() {
+			if err := repos.Close(); err != nil {
+				logger.Error("ошибка при закрытии подключения базы данных.", zap.Error(err))
+			}
+		}()
+	case config.FileStorage == "":
 		repos = repositories.NewLocalRepository(logger, config)
-	} else {
-		file, err := os.OpenFile(config.FileStorage, os.O_CREATE|os.O_RDWR, 0666)
+	default:
+		file, err := os.OpenFile(config.FileStorage, os.O_CREATE|os.O_RDWR, filePerms)
 		if err != nil {
 			logger.Fatal("ошибка при попытке открытия файла", zap.Error(err))
 		}
-		defer file.Close()
+		defer func() {
+			if err := file.Close(); err != nil {
+				logger.Error("ошибка при закрытии файлового репозитория.", zap.Error(err))
+			}
+		}()
 		repos, err = repositories.NewFileRepository(config, logger, file)
 		if err != nil {
-			logger.Fatal("ошибка при иницилизации репозитория.", zap.Error(err))
+			logger.Fatal("ошибка при иницилизации файлового репозитория.", zap.Error(err))
 		}
 	}
 	services := services.NewService(logger, config, repos)

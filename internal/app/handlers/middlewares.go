@@ -3,10 +3,13 @@ package handlers
 import (
 	"compress/gzip"
 	"context"
-	"go.uber.org/zap"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
+
+	"go.uber.org/zap"
 )
 
 type userCtxKey string
@@ -21,21 +24,29 @@ type gzipWriter struct {
 }
 
 func (w gzipWriter) Write(b []byte) (int, error) {
-	return w.Writer.Write(b)
+	count, err := w.Writer.Write(b)
+	if err != nil {
+		return count, fmt.Errorf("qzip writer error: %w", err)
+	}
+	return count, nil
 }
 
-func gzipRead(r *http.Request) error {
+func gzipRead(logger *zap.Logger, r *http.Request) error {
 	for _, array := range r.Header.Values("Content-Encoding") {
 		for _, value := range strings.Split(array, ", ") {
 			if strings.Contains(value, "gzip") {
 				cr, err := gzip.NewReader(r.Body)
 				if err != nil {
-					return err
+					return fmt.Errorf("gzip reader error %w", err)
 				}
 				// меняем тело запроса на новое
 				r.Body = cr
-				defer cr.Close()
-				//избегаем повторения операции
+				defer func() {
+					if err := cr.Close(); err != nil {
+						logger.Error("gzip reader close err.", zap.Error(err))
+					}
+				}()
+				// избегаем повторения операции
 				return nil
 			}
 		}
@@ -65,12 +76,16 @@ func gzipReadWriterHandler(logger *zap.Logger) func(http.Handler) http.Handler {
 					logger.Error("ошибка при иницилизации gzip логгера", zap.Error(err))
 					w.WriteHeader(http.StatusInternalServerError)
 				}
-				defer gz.Close()
+				defer func() {
+					if err := gz.Close(); err != nil {
+						logger.Error("gzip writer close err.", zap.Error(err))
+					}
+				}()
 				w.Header().Set("Content-Encoding", "gzip")
 				wr = gzipWriter{ResponseWriter: w, Writer: gz}
 			}
 			// меняем тело запроса, если оно сжато
-			if err := gzipRead(r); err != nil {
+			if err := gzipRead(logger, r); err != nil {
 				logger.Error("ошибка при сжатии ответа", zap.Error(err))
 				w.WriteHeader(http.StatusInternalServerError)
 				return
@@ -85,6 +100,9 @@ func userIdentity(services Service, logger *zap.Logger) func(http.Handler) http.
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			cookie, err := r.Cookie("authToken")
 			if err != nil {
+				if !errors.Is(err, http.ErrNoCookie) {
+					logger.Error("ошибка получения токена", zap.Error(err))
+				}
 				val, err := services.GenerateToken(r.Context())
 				if err != nil {
 					logger.Error("ошибка при генерации токена", zap.Error(err))

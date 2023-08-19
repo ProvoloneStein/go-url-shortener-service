@@ -36,7 +36,8 @@ func (m *MockService) EXPECT() *MockServiceMockRecorder {
 }
 
 // BatchCreate mocks base method.
-func (m *MockService) BatchCreate(ctx context.Context, userID string, data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
+func (m *MockService) BatchCreate(ctx context.Context, userID string,
+	data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "BatchCreate", ctx, userID, data)
 	ret0, _ := ret[0].([]models.BatchCreateResponse)
@@ -65,6 +66,18 @@ func (mr *MockServiceMockRecorder) CreateShortURL(ctx, userID, fullURL interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateShortURL", reflect.TypeOf((*MockService)(nil).CreateShortURL), ctx, userID, fullURL)
 }
 
+// DeleteUserURLsBatch mocks base method.
+func (m *MockService) DeleteUserURLsBatch(ctx context.Context, userID string, data []string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "DeleteUserURLsBatch", ctx, userID, data)
+}
+
+// DeleteUserURLsBatch indicates an expected call of DeleteUserURLsBatch.
+func (mr *MockServiceMockRecorder) DeleteUserURLsBatch(ctx, userID, data interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUserURLsBatch", reflect.TypeOf((*MockService)(nil).DeleteUserURLsBatch), ctx, userID, data)
+}
+
 // GenerateToken mocks base method.
 func (m *MockService) GenerateToken(ctx context.Context) (string, error) {
 	m.ctrl.T.Helper()
@@ -81,18 +94,18 @@ func (mr *MockServiceMockRecorder) GenerateToken(ctx interface{}) *gomock.Call {
 }
 
 // GetFullByID mocks base method.
-func (m *MockService) GetFullByID(ctx context.Context, userID, shortURL string) (string, error) {
+func (m *MockService) GetFullByID(ctx context.Context, shortURL string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetFullByID", ctx, userID, shortURL)
+	ret := m.ctrl.Call(m, "GetFullByID", ctx, shortURL)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetFullByID indicates an expected call of GetFullByID.
-func (mr *MockServiceMockRecorder) GetFullByID(ctx, userID, shortURL interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) GetFullByID(ctx, shortURL interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFullByID", reflect.TypeOf((*MockService)(nil).GetFullByID), ctx, userID, shortURL)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFullByID", reflect.TypeOf((*MockService)(nil).GetFullByID), ctx, shortURL)
 }
 
 // GetListByUser mocks base method.

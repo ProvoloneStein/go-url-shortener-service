@@ -1,18 +1,27 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 	"time"
+)
+
+const (
+	serverReadTimeout  = 15 * time.Second
+	serverWriteTimeout = 15 * time.Second
+	maxHeaderBytes     = 1 << 20 // 1 MB
 )
 
 func Run(addr string, handler http.Handler) error {
 	httpServer := &http.Server{
 		Addr:           addr,
 		Handler:        handler,
-		MaxHeaderBytes: 1 << 20, // 1 MB
-		ReadTimeout:    10 * time.Second,
-		WriteTimeout:   10 * time.Second,
+		MaxHeaderBytes: maxHeaderBytes,
+		ReadTimeout:    serverReadTimeout,
+		WriteTimeout:   serverWriteTimeout,
 	}
-
-	return httpServer.ListenAndServe()
+	if err := httpServer.ListenAndServe(); err != nil {
+		return fmt.Errorf("server run:  %w", err)
+	}
+	return nil
 }
