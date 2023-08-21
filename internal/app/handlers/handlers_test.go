@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func ExampleHandler() {
+func ExampleHandler_CreateShortURL() {
 	req, err := http.NewRequest(http.MethodPost,
 		"http://localhost:8080/", strings.NewReader("example.org"))
 	if err != nil {
@@ -26,7 +26,7 @@ func ExampleHandler() {
 	defer resp.Body.Close()
 }
 
-func ExampleHandler_2() {
+func ExampleHandler_GetByShort() {
 
 	req, err := http.NewRequest(http.MethodGet,
 		"http://localhost:8080/short_url.com", nil)
@@ -46,7 +46,7 @@ func ExampleHandler_2() {
 	defer resp.Body.Close()
 }
 
-func ExampleHandler_3() {
+func ExampleHandler_CreateShortURLByJSON() {
 
 	data, err := json.Marshal(map[string]string{
 		"url": "https://ya.ru",
@@ -74,7 +74,7 @@ func ExampleHandler_3() {
 	defer resp.Body.Close()
 }
 
-func ExampleHandler_4() {
+func ExampleHandler_GetUserURLs() {
 
 	req, err := http.NewRequest(http.MethodGet,
 		"http://localhost:8080/api/shorten/user/urls/", nil)
@@ -94,7 +94,7 @@ func ExampleHandler_4() {
 	defer resp.Body.Close()
 }
 
-func ExampleHandler_5() {
+func ExampleHandler_DeleteUserURLsBatch() {
 
 	data, err := json.Marshal(
 		[]string{"https://short_url", "https://short_url_2"},
@@ -122,7 +122,7 @@ func ExampleHandler_5() {
 	defer resp.Body.Close()
 }
 
-func ExampleHandler_6() {
+func ExampleHandler_BatchCreateURLByJSON() {
 
 	data, err := json.Marshal(
 		[]map[string]string{
