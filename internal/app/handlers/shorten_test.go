@@ -136,14 +136,14 @@ func TestHandler_CreateShortURLByJSON(t *testing.T) {
 
 			request := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(data))
 			request = request.WithContext(context.WithValue(request.Context(), userCtx, tt.userID))
-			request.Header.Set(contenntTypeHeader, tt.contentType)
+			request.Header.Set(contentTypeHeader, tt.contentType)
 			w := httptest.NewRecorder()
 			handlers.CreateShortURLByJSON(w, request)
 			result := w.Result()
 			defer result.Body.Close()
 
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
-			assert.Equal(t, tt.want.contentType, result.Header.Get(contenntTypeHeader))
+			assert.Equal(t, tt.want.contentType, result.Header.Get(contentTypeHeader))
 		})
 	}
 }

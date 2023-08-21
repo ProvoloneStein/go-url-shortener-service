@@ -13,6 +13,7 @@ import (
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/repositories"
 )
 
+// Repository - интерфейс с необходимым набором методов в репозитории.
 type Repository interface {
 	Create(ctx context.Context, userID, fullURL, shortURL string) (string, error)
 	BatchCreate(ctx context.Context, data []models.BatchCreateData) ([]models.BatchCreateResponse, error)

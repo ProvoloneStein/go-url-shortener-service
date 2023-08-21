@@ -125,7 +125,7 @@ func TestHandler_CreateShortURL(t *testing.T) {
 			if tt.userID != "" {
 				request = request.WithContext(context.WithValue(request.Context(), userCtx, tt.userID))
 			}
-			request.Header.Set(contenntTypeHeader, tt.contentType)
+			request.Header.Set(contentTypeHeader, tt.contentType)
 			w := httptest.NewRecorder()
 			handlers.CreateShortURL(w, request)
 			result := w.Result()
@@ -133,7 +133,7 @@ func TestHandler_CreateShortURL(t *testing.T) {
 			respBody, _ := io.ReadAll(result.Body)
 
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
-			assert.Equal(t, tt.want.contentType, result.Header.Get(contenntTypeHeader))
+			assert.Equal(t, tt.want.contentType, result.Header.Get(contentTypeHeader))
 			assert.Equal(t, tt.want.body, string(respBody))
 		})
 	}

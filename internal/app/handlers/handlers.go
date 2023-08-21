@@ -12,17 +12,25 @@ import (
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/logger"
 )
 
-const contenntTypeHeader = "Content-Type"
+const contentTypeHeader = "Content-Type"
 
+// Service -  интерфейс с необходимым набором методов сервиса.
+//
 //go:generate mockgen -source=handlers.go -destination=mocks/mock.go
 type Service interface {
 	CreateShortURL(ctx context.Context, userID, fullURL string) (string, error)
 	BatchCreate(ctx context.Context, userID string, data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error)
+	// GetFullByID - получить полный URL по короткому URL.
 	GetFullByID(ctx context.Context, shortURL string) (string, error)
+	// GetListByUser - получить список связей короткий/длинный URL по пользователю.
 	GetListByUser(ctx context.Context, userID string) ([]models.GetURLResponse, error)
+	// DeleteUserURLsBatch - удалить связть короткий/длинный URL.
 	DeleteUserURLsBatch(ctx context.Context, userID string, data []string)
+	// GenerateToken - получить токен авторизации.
 	GenerateToken(ctx context.Context) (string, error)
+	// ParseToken - расшифровать токен авторизации.
 	ParseToken(accessToken string) (string, error)
+	// Ping - проверить доступность сервиса.
 	Ping() error
 }
 

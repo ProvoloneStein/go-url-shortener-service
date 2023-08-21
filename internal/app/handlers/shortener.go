@@ -12,9 +12,10 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+// CreateShortURL - хэндлер создания короткого URL.
 func (h *Handler) CreateShortURL(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	ct := r.Header.Get(contenntTypeHeader)
+	ct := r.Header.Get(contentTypeHeader)
 	if !strings.HasPrefix(ct, "text/plain") && !strings.HasPrefix(ct, "application/x-gzip") {
 		http.Error(w, "Неверный header запроса", http.StatusBadRequest)
 		return
@@ -35,7 +36,7 @@ func (h *Handler) CreateShortURL(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Неверный запрос", http.StatusBadRequest)
 		return
 	}
-	w.Header().Set(contenntTypeHeader, "text/plain; charset=utf-8")
+	w.Header().Set(contentTypeHeader, "text/plain; charset=utf-8")
 	if errors.Is(err, repositories.ErrUniqueViolation) {
 		w.WriteHeader(http.StatusConflict)
 	} else {
@@ -48,6 +49,7 @@ func (h *Handler) CreateShortURL(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetByShort - хэндлер получения длинного URL по короткому URL.
 func (h *Handler) GetByShort(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	shortURL := chi.URLParam(r, "id")

@@ -28,11 +28,12 @@ const (
 	contentTypeJSON = "application/json"
 )
 
+// CreateShortURLByJSON - хэндлер создания короткого URL через JSON формат.
 func (h *Handler) CreateShortURLByJSON(w http.ResponseWriter, r *http.Request) {
 	var requestBody requestData
 
 	ctx := r.Context()
-	ct := r.Header.Get(contenntTypeHeader)
+	ct := r.Header.Get(contentTypeHeader)
 	if !strings.HasPrefix(ct, contentTypeJSON) && !strings.HasPrefix(ct, "application/x-gzip") {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
@@ -62,7 +63,7 @@ func (h *Handler) CreateShortURLByJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set(contenntTypeHeader, contentTypeJSON)
+	w.Header().Set(contentTypeHeader, contentTypeJSON)
 
 	if errors.Is(err, repositories.ErrUniqueViolation) {
 		w.WriteHeader(http.StatusConflict)
@@ -81,11 +82,12 @@ func (h *Handler) CreateShortURLByJSON(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// BatchCreateURLByJSON - хэндлер создания партии коротких URL в формате JSON.
 func (h *Handler) BatchCreateURLByJSON(w http.ResponseWriter, r *http.Request) {
 	var requestBody []models.BatchCreateRequest
 
 	ctx := r.Context()
-	ct := r.Header.Get(contenntTypeHeader)
+	ct := r.Header.Get(contentTypeHeader)
 	if !strings.HasPrefix(ct, contentTypeJSON) && !strings.HasPrefix(ct, "application/x-gzip") {
 		http.Error(w, "Неверный header", http.StatusBadRequest)
 		return
@@ -116,7 +118,7 @@ func (h *Handler) BatchCreateURLByJSON(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set(contenntTypeHeader, contentTypeJSON)
+	w.Header().Set(contentTypeHeader, contentTypeJSON)
 	w.WriteHeader(http.StatusCreated)
 
 	if _, err = w.Write(b); err != nil {
@@ -125,6 +127,7 @@ func (h *Handler) BatchCreateURLByJSON(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetUserURLs - хэндлер получения пары коротких/ длинны URLs пользователя.
 func (h *Handler) GetUserURLs(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	userID, err := getUserID(ctx)
@@ -152,7 +155,7 @@ func (h *Handler) GetUserURLs(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set(contenntTypeHeader, contentTypeJSON)
+	w.Header().Set(contentTypeHeader, contentTypeJSON)
 	w.WriteHeader(http.StatusOK)
 
 	if _, err = w.Write(b); err != nil {
@@ -161,6 +164,7 @@ func (h *Handler) GetUserURLs(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// DeleteUserURLsBatch - хэндлер удаления партии коротких URL пользователя.
 func (h *Handler) DeleteUserURLsBatch(w http.ResponseWriter, r *http.Request) {
 	var reqBody []string
 
@@ -180,6 +184,6 @@ func (h *Handler) DeleteUserURLsBatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	go h.services.DeleteUserURLsBatch(context.Background(), userID, reqBody)
-	w.Header().Set(contenntTypeHeader, contentTypeJSON)
+	w.Header().Set(contentTypeHeader, contentTypeJSON)
 	w.WriteHeader(http.StatusAccepted)
 }
