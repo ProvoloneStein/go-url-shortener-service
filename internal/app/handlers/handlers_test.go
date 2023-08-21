@@ -3,89 +3,128 @@ package handlers_test
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strings"
 )
 
 func ExampleHandler_CreateShortURL() {
-	req, _ := http.NewRequest(http.MethodPost,
-		fmt.Sprintf("http://localhost:8080/"), strings.NewReader("example.org"))
+	req, err := http.NewRequest(http.MethodPost,
+		"http://localhost:8080/", strings.NewReader("example.org"))
+	if err != nil {
+		return
+	}
 	req.Header.Add("Content-Type", "text/plain")
 
 	client := &http.Client{}
 
-	resp, _ := client.Do(req)
+	resp, err := client.Do(req)
+
+	if err != nil {
+		return
+	}
 
 	defer resp.Body.Close()
 }
 
 func ExampleHandler_GetByShort() {
 
-	req, _ := http.NewRequest(http.MethodGet,
-		fmt.Sprintf("http://localhost:8080/short_url.com"), nil)
+	req, err := http.NewRequest(http.MethodGet,
+		"http://localhost:8080/short_url.com", nil)
+	if err != nil {
+		return
+	}
 	req.Header.Add("Content-Type", "text/plain")
 
 	client := &http.Client{}
 
-	resp, _ := client.Do(req)
+	resp, err := client.Do(req)
+
+	if err != nil {
+		return
+	}
 
 	defer resp.Body.Close()
 }
 
 func ExampleHandler_CreateShortURLByJSON() {
 
-	data, _ := json.Marshal(map[string]string{
+	data, err := json.Marshal(map[string]string{
 		"url": "https://ya.ru",
 	},
 	)
+	if err != nil {
+		return
+	}
 
-	req, _ := http.NewRequest(http.MethodPost,
-		fmt.Sprintf("http://localhost:8080/api/shorten/"), bytes.NewReader(data))
+	req, err := http.NewRequest(http.MethodPost,
+		"http://localhost:8080/api/shorten/", bytes.NewReader(data))
+
+	if err != nil {
+		return
+	}
 	req.Header.Add("Content-Type", "application/json")
 
 	client := &http.Client{}
 
-	resp, _ := client.Do(req)
+	resp, err := client.Do(req)
+	if err != nil {
+		return
+	}
 
 	defer resp.Body.Close()
 }
 
 func ExampleHandler_GetUserURLs() {
 
-	req, _ := http.NewRequest(http.MethodGet,
-		fmt.Sprintf("http://localhost:8080/api/shorten/user/urls/"), nil)
+	req, err := http.NewRequest(http.MethodGet,
+		"http://localhost:8080/api/shorten/user/urls/", nil)
+	if err != nil {
+		return
+	}
 	req.Header.Add("Content-Type", "application/json")
 	req.AddCookie(&http.Cookie{Name: "authToken", Value: "user_token_value"})
 
 	client := &http.Client{}
 
-	resp, _ := client.Do(req)
+	resp, err := client.Do(req)
+	if err != nil {
+		return
+	}
 
 	defer resp.Body.Close()
 }
 
 func ExampleHandler_DeleteUserURLsBatch() {
 
-	data, _ := json.Marshal(
+	data, err := json.Marshal(
 		[]string{"https://short_url", "https://short_url_2"},
 	)
 
-	req, _ := http.NewRequest(http.MethodDelete,
-		fmt.Sprintf("http://localhost:8080/api/shorten/user/urls/"), bytes.NewReader(data))
+	if err != nil {
+		return
+	}
+
+	req, err := http.NewRequest(http.MethodDelete,
+		"http://localhost:8080/api/shorten/user/urls/", bytes.NewReader(data))
+	if err != nil {
+		return
+	}
 	req.Header.Add("Content-Type", "application/json")
 	req.AddCookie(&http.Cookie{Name: "authToken", Value: "user_token_value"})
 
 	client := &http.Client{}
 
-	resp, _ := client.Do(req)
+	resp, err := client.Do(req)
+	if err != nil {
+		return
+	}
 
 	defer resp.Body.Close()
 }
 
 func ExampleHandler_BatchCreateURLByJSON() {
 
-	data, _ := json.Marshal(
+	data, err := json.Marshal(
 		[]map[string]string{
 			{
 				"url":            "https://ya.ru",
@@ -97,14 +136,23 @@ func ExampleHandler_BatchCreateURLByJSON() {
 			},
 		},
 	)
+	if err != nil {
+		return
+	}
 
-	req, _ := http.NewRequest(http.MethodPost,
-		fmt.Sprintf("http://localhost:8080/api/shorten/batch"), bytes.NewReader(data))
+	req, err := http.NewRequest(http.MethodPost,
+		"http://localhost:8080/api/shorten/batch", bytes.NewReader(data))
+	if err != nil {
+		return
+	}
 	req.Header.Add("Content-Type", "application/json")
 
 	client := &http.Client{}
 
-	resp, _ := client.Do(req)
+	resp, err := client.Do(req)
+	if err != nil {
+		return
+	}
 
 	defer resp.Body.Close()
 }
