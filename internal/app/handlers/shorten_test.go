@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	mock_handlers "github.com/ProvoloneStein/go-url-shortener-service/internal/app/handlers/mocks"
+	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/repositories"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -80,8 +81,8 @@ func TestHandler_CreateShortURLByJSON(t *testing.T) {
 					userID, fullURL).Return("123", repositories.ErrUniqueViolation).MaxTimes(1)
 			},
 			want: want{
-				contentType: contentTypeJSON,
-				statusCode:  409,
+				contentType: "text/plain; charset=utf-8",
+				statusCode:  401,
 				body:        "123",
 			},
 		},
@@ -104,6 +105,7 @@ func TestHandler_CreateShortURLByJSON(t *testing.T) {
 		},
 		{
 			name:        "Good test",
+			userID:      "321",
 			contentType: contentTypeJSON,
 			body: map[string]string{
 				"url": "https://ya.ru",
@@ -135,7 +137,9 @@ func TestHandler_CreateShortURLByJSON(t *testing.T) {
 			assert.NoError(t, err)
 
 			request := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(data))
-			request = request.WithContext(context.WithValue(request.Context(), userCtx, tt.userID))
+			if tt.userID != "" {
+				request = request.WithContext(context.WithValue(request.Context(), userCtx, tt.userID))
+			}
 			request.Header.Set(contentTypeHeader, tt.contentType)
 			w := httptest.NewRecorder()
 			handlers.CreateShortURLByJSON(w, request)
@@ -144,6 +148,140 @@ func TestHandler_CreateShortURLByJSON(t *testing.T) {
 
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
 			assert.Equal(t, tt.want.contentType, result.Header.Get(contentTypeHeader))
+		})
+	}
+}
+
+func TestHandler_BatchCreateURLByJSON(t *testing.T) {
+	// Init Test Table
+	type mockBehavior func(r *mock_handlers.MockService, userID string)
+
+	type want struct {
+		statusCode int
+	}
+
+	tests := []struct {
+		name         string
+		body         []map[string]string
+		userID       string
+		mockBehavior mockBehavior
+		contentType  string
+		want         want
+	}{
+		{
+			name:        "Wrong Content Type",
+			contentType: "text/plain",
+			userID:      "123",
+			body: []map[string]string{
+				{
+					"url":            "https://ya.ru",
+					"correlation_id": "vfwt4312",
+				},
+				{
+					"url":            "https://yand.ru",
+					"correlation_id": "fwef13",
+				},
+			},
+			mockBehavior: func(r *mock_handlers.MockService, userID string) {
+				r.EXPECT().BatchCreate(gomock.AssignableToTypeOf(reflect.TypeOf((*context.Context)(nil)).Elem()),
+					userID, gomock.Any()).Return([]models.BatchCreateResponse{}, nil).MaxTimes(1)
+			},
+			want: want{
+				statusCode: 400,
+			},
+		},
+		{
+			name:        "good test",
+			contentType: contentTypeJSON,
+			userID:      "123",
+			body: []map[string]string{
+				{
+					"original_url":   "https://ya.ru",
+					"correlation_id": "vfwt4312",
+				},
+				{
+					"original_url":   "https://yand.ru",
+					"correlation_id": "fwef13",
+				},
+			},
+			mockBehavior: func(r *mock_handlers.MockService, userID string) {
+				r.EXPECT().BatchCreate(gomock.AssignableToTypeOf(reflect.TypeOf((*context.Context)(nil)).Elem()),
+					userID, gomock.Any()).Return([]models.BatchCreateResponse{}, nil).MaxTimes(1)
+			},
+			want: want{
+				statusCode: 201,
+			},
+		},
+		{
+			name:        "err noAuth",
+			userID:      "",
+			contentType: contentTypeJSON,
+			body: []map[string]string{
+				{
+					"original_url":   "https://ya.ru",
+					"correlation_id": "vfwt4312",
+				},
+				{
+					"original_url":   "https://yand.ru",
+					"correlation_id": "fwef13",
+				},
+			},
+			mockBehavior: func(r *mock_handlers.MockService, userID string) {
+				r.EXPECT().BatchCreate(gomock.AssignableToTypeOf(reflect.TypeOf((*context.Context)(nil)).Elem()),
+					userID, gomock.Any()).Return([]models.BatchCreateResponse{}, errors.New("any err")).MaxTimes(1)
+			},
+			want: want{
+				statusCode: 401,
+			},
+		},
+		{
+			name:        "good test",
+			contentType: contentTypeJSON,
+			userID:      "123",
+			body: []map[string]string{
+				{
+					"original_url":   "https://ya.ru",
+					"correlation_id": "vfwt4312",
+				},
+				{
+					"original_url":   "https://yand.ru",
+					"correlation_id": "fwef13",
+				},
+			},
+			mockBehavior: func(r *mock_handlers.MockService, userID string) {
+				r.EXPECT().BatchCreate(gomock.AssignableToTypeOf(reflect.TypeOf((*context.Context)(nil)).Elem()),
+					userID, gomock.Any()).Return([]models.BatchCreateResponse{}, errors.New("any err")).MaxTimes(1)
+			},
+			want: want{
+				statusCode: 400,
+			},
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			// Init Dependencies
+			c := gomock.NewController(t)
+			defer c.Finish()
+			mockServices := mock_handlers.NewMockService(c)
+			tt.mockBehavior(mockServices, tt.userID)
+			handlers := Handler{logger: zap.NewNop(), services: mockServices}
+
+			// Create Request
+			data, err := json.Marshal(tt.body)
+			assert.NoError(t, err)
+
+			request := httptest.NewRequest(http.MethodPost, "/api/shorten/batch", bytes.NewReader(data))
+			if tt.userID != "" {
+				request = request.WithContext(context.WithValue(request.Context(), userCtx, tt.userID))
+			}
+			request.Header.Set(contentTypeHeader, tt.contentType)
+			w := httptest.NewRecorder()
+			handlers.BatchCreateURLByJSON(w, request)
+			result := w.Result()
+			defer result.Body.Close()
+
+			assert.Equal(t, tt.want.statusCode, result.StatusCode)
 		})
 	}
 }

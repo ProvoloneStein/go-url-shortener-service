@@ -127,11 +127,11 @@ func ExampleHandler_BatchCreateURLByJSON() {
 	data, err := json.Marshal(
 		[]map[string]string{
 			{
-				"url":            "https://ya.ru",
+				"original_url":   "https://ya.ru",
 				"correlation_id": "vfwt4312",
 			},
 			{
-				"url":            "https://yand.ru",
+				"original_url":   "https://yand.ru",
 				"correlation_id": "fwef13",
 			},
 		},

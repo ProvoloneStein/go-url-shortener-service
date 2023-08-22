@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -53,6 +54,7 @@ func (h *Handler) CreateShortURL(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetByShort(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	shortURL := chi.URLParam(r, "id")
+	fmt.Println(shortURL)
 	_, err := getUserID(ctx)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
