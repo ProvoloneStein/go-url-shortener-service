@@ -25,15 +25,15 @@ func TestHandler_userIdentity(t *testing.T) {
 
 	tests := []struct {
 		name              string
-		ctx               context.Context
+		cookieVal         string
 		mockGenerateToken mockGenerateTokenBehavior
 		mockParseToken    mockParseTokenBehavior
 		mockPing          mockPingBehavior
 		want              want
 	}{
 		{
-			name: "good test generate token",
-			ctx:  context.Background(),
+			name:      "good test generate token",
+			cookieVal: "",
 			mockGenerateToken: func(r *mock_handlers.MockService) {
 				r.EXPECT().GenerateToken(gomock.AssignableToTypeOf(reflect.TypeOf((*context.Context)(nil)).Elem())).
 					Return("123", nil).MaxTimes(1)
@@ -49,8 +49,8 @@ func TestHandler_userIdentity(t *testing.T) {
 			},
 		},
 		{
-			name: "good test parse token",
-			ctx:  context.WithValue(context.Background(), "authToken", "any_token_value"),
+			name:      "good test parse token",
+			cookieVal: "any_token_value",
 			mockGenerateToken: func(r *mock_handlers.MockService) {
 				r.EXPECT().GenerateToken(gomock.AssignableToTypeOf(reflect.TypeOf((*context.Context)(nil)).Elem())).
 					Return("123", nil).MaxTimes(1)
@@ -66,8 +66,8 @@ func TestHandler_userIdentity(t *testing.T) {
 			},
 		},
 		{
-			name: "GenerateToken err",
-			ctx:  context.Background(),
+			name:      "GenerateToken err",
+			cookieVal: "",
 			mockGenerateToken: func(r *mock_handlers.MockService) {
 				r.EXPECT().GenerateToken(gomock.AssignableToTypeOf(reflect.TypeOf((*context.Context)(nil)).Elem())).
 					Return("123", errors.New("any err")).MaxTimes(1)
@@ -83,8 +83,8 @@ func TestHandler_userIdentity(t *testing.T) {
 			},
 		},
 		{
-			name: "parsetoken err",
-			ctx:  context.WithValue(context.Background(), "authToken", "any_token_value"),
+			name:      "parsetoken err",
+			cookieVal: "any_token_value",
 			mockGenerateToken: func(r *mock_handlers.MockService) {
 				r.EXPECT().GenerateToken(gomock.AssignableToTypeOf(reflect.TypeOf((*context.Context)(nil)).Elem())).
 					Return("123", nil).MaxTimes(1)
@@ -103,10 +103,8 @@ func TestHandler_userIdentity(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-
 			// create a handler to use as "next" which will verify the request
 			nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				return
 			})
 			// Init Dependencies
 			c := gomock.NewController(t)
@@ -120,7 +118,9 @@ func TestHandler_userIdentity(t *testing.T) {
 			handler := middleware(nextHandler)
 
 			request := httptest.NewRequest(http.MethodGet, "/ping", nil)
-			request = request.WithContext(tt.ctx)
+			if tt.cookieVal != "" {
+				request.AddCookie(&http.Cookie{Name: "authToken", Value: tt.cookieVal})
+			}
 			w := httptest.NewRecorder()
 			handler.ServeHTTP(w, request)
 			result := w.Result()
