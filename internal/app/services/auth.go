@@ -20,6 +20,11 @@ type tokenClaims struct {
 }
 
 func (s *Service) GenerateToken(ctx context.Context) (string, error) {
+	select {
+	case <-ctx.Done():
+		return "", defaultServiceErrWrapper(ctx.Err())
+	default:
+	}
 	userID := uuid.New().String()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &tokenClaims{
 		jwt.RegisteredClaims{

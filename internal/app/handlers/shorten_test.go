@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	mock_handlers "github.com/ProvoloneStein/go-url-shortener-service/internal/app/handlers/mocks"
@@ -66,6 +67,23 @@ func TestHandler_CreateShortURLByJSON(t *testing.T) {
 			want: want{
 				contentType: contentTypeJSON,
 				statusCode:  409,
+				body:        "123",
+			},
+		},
+		{
+			name:        "err Validation",
+			contentType: contentTypeJSON,
+			userID:      "31",
+			body: map[string]string{
+				"url": "asdasd",
+			},
+			mockBehavior: func(r *mock_handlers.MockService, userID, fullURL string) {
+				r.EXPECT().CreateShortURL(gomock.AssignableToTypeOf(reflect.TypeOf((*context.Context)(nil)).Elem()),
+					userID, fullURL).Return("123", nil).MaxTimes(1)
+			},
+			want: want{
+				contentType: "text/plain; charset=utf-8",
+				statusCode:  400,
 				body:        "123",
 			},
 		},
@@ -278,6 +296,168 @@ func TestHandler_BatchCreateURLByJSON(t *testing.T) {
 			request.Header.Set(contentTypeHeader, tt.contentType)
 			w := httptest.NewRecorder()
 			handlers.BatchCreateURLByJSON(w, request)
+			result := w.Result()
+			defer result.Body.Close()
+
+			assert.Equal(t, tt.want.statusCode, result.StatusCode)
+		})
+	}
+}
+
+func TestHandler_GetUserURLs(t *testing.T) {
+	// Init Test Table
+	type mockBehavior func(r *mock_handlers.MockService, userID string)
+
+	type want struct {
+		statusCode int
+	}
+
+	tests := []struct {
+		name         string
+		userID       string
+		mockBehavior mockBehavior
+		want         want
+	}{
+		{
+			name:   "no auth",
+			userID: "",
+			mockBehavior: func(r *mock_handlers.MockService, userID string) {
+				r.EXPECT().GetListByUser(gomock.AssignableToTypeOf(reflect.TypeOf((*context.Context)(nil)).Elem()),
+					userID).Return([]models.GetURLResponse{}, nil).MaxTimes(1)
+			},
+			want: want{
+				statusCode: 401,
+			},
+		},
+		{
+			name:   "good test",
+			userID: "123",
+			mockBehavior: func(r *mock_handlers.MockService, userID string) {
+				r.EXPECT().GetListByUser(gomock.AssignableToTypeOf(reflect.TypeOf((*context.Context)(nil)).Elem()),
+					userID).Return([]models.GetURLResponse{}, nil).MaxTimes(1)
+			},
+			want: want{
+				statusCode: 200,
+			},
+		},
+		{
+			name:   "err ErrNoRows",
+			userID: "123",
+			mockBehavior: func(r *mock_handlers.MockService, userID string) {
+				r.EXPECT().GetListByUser(gomock.AssignableToTypeOf(reflect.TypeOf((*context.Context)(nil)).Elem()),
+					userID).Return([]models.GetURLResponse{}, sql.ErrNoRows).MaxTimes(1)
+			},
+			want: want{
+				statusCode: 204,
+			},
+		},
+		{
+			name:   "err ErrDeleted",
+			userID: "123",
+			mockBehavior: func(r *mock_handlers.MockService, userID string) {
+				r.EXPECT().GetListByUser(gomock.AssignableToTypeOf(reflect.TypeOf((*context.Context)(nil)).Elem()),
+					userID).Return([]models.GetURLResponse{}, repositories.ErrDeleted).MaxTimes(1)
+			},
+			want: want{
+				statusCode: 410,
+			},
+		},
+		{
+			name:   "err custome",
+			userID: "123",
+			mockBehavior: func(r *mock_handlers.MockService, userID string) {
+				r.EXPECT().GetListByUser(gomock.AssignableToTypeOf(reflect.TypeOf((*context.Context)(nil)).Elem()),
+					userID).Return([]models.GetURLResponse{}, errors.New("new")).MaxTimes(1)
+			},
+			want: want{
+				statusCode: 500,
+			},
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			// Init Dependencies
+			c := gomock.NewController(t)
+			defer c.Finish()
+			mockServices := mock_handlers.NewMockService(c)
+			tt.mockBehavior(mockServices, tt.userID)
+			handlers := Handler{logger: zap.NewNop(), services: mockServices}
+
+			request := httptest.NewRequest(http.MethodPost, "/api/shorten/user/urls", nil)
+			if tt.userID != "" {
+				request = request.WithContext(context.WithValue(request.Context(), userCtx, tt.userID))
+			}
+			w := httptest.NewRecorder()
+			handlers.GetUserURLs(w, request)
+			result := w.Result()
+			defer result.Body.Close()
+
+			assert.Equal(t, tt.want.statusCode, result.StatusCode)
+		})
+	}
+}
+
+func TestHandler_DeleteUserURLsBatch(t *testing.T) {
+	// Init Test Table
+	type mockBehavior func(r *mock_handlers.MockService, userID string)
+
+	type want struct {
+		statusCode int
+	}
+
+	tests := []struct {
+		name         string
+		userID       string
+		body         []string
+		mockBehavior mockBehavior
+		want         want
+	}{
+		{
+			name:   "no auth",
+			userID: "",
+			body:   []string{"fafs", "fafadfd"},
+			mockBehavior: func(r *mock_handlers.MockService, userID string) {
+				r.EXPECT().DeleteUserURLsBatch(gomock.AssignableToTypeOf(reflect.TypeOf((*context.Context)(nil)).Elem()),
+					userID, gomock.Any()).Return(nil).MaxTimes(1)
+			},
+			want: want{
+				statusCode: 401,
+			},
+		},
+		{
+			name:   "good test",
+			userID: "123",
+			body:   []string{"fafs", "fafadfd"},
+			mockBehavior: func(r *mock_handlers.MockService, userID string) {
+				r.EXPECT().DeleteUserURLsBatch(gomock.AssignableToTypeOf(reflect.TypeOf((*context.Context)(nil)).Elem()),
+					userID, gomock.Any()).Return(nil).MaxTimes(1)
+			},
+			want: want{
+				statusCode: 202,
+			},
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			// Init Dependencies
+			c := gomock.NewController(t)
+			defer c.Finish()
+			mockServices := mock_handlers.NewMockService(c)
+			tt.mockBehavior(mockServices, tt.userID)
+			handlers := Handler{logger: zap.NewNop(), services: mockServices}
+
+			// Create Request
+			data, err := json.Marshal(tt.body)
+			assert.NoError(t, err)
+
+			request := httptest.NewRequest(http.MethodDelete, "/api/shorten/user/urls", bytes.NewReader(data))
+			if tt.userID != "" {
+				request = request.WithContext(context.WithValue(request.Context(), userCtx, tt.userID))
+			}
+			w := httptest.NewRecorder()
+			handlers.DeleteUserURLsBatch(w, request)
 			result := w.Result()
 			defer result.Body.Close()
 

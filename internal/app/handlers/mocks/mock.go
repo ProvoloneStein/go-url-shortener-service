@@ -36,8 +36,7 @@ func (m *MockService) EXPECT() *MockServiceMockRecorder {
 }
 
 // BatchCreate mocks base method.
-func (m *MockService) BatchCreate(ctx context.Context, userID string,
-	data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
+func (m *MockService) BatchCreate(ctx context.Context, userID string, data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "BatchCreate", ctx, userID, data)
 	ret0, _ := ret[0].([]models.BatchCreateResponse)
@@ -67,9 +66,11 @@ func (mr *MockServiceMockRecorder) CreateShortURL(ctx, userID, fullURL interface
 }
 
 // DeleteUserURLsBatch mocks base method.
-func (m *MockService) DeleteUserURLsBatch(ctx context.Context, userID string, data []string) {
+func (m *MockService) DeleteUserURLsBatch(ctx context.Context, userID string, data []string) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "DeleteUserURLsBatch", ctx, userID, data)
+	ret := m.ctrl.Call(m, "DeleteUserURLsBatch", ctx, userID, data)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // DeleteUserURLsBatch indicates an expected call of DeleteUserURLsBatch.

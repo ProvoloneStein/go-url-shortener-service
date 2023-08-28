@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -24,6 +25,14 @@ func TestHandler_getUserID(t *testing.T) {
 			want: want{
 				res: "3213",
 				err: nil,
+			},
+		},
+		{
+			name: "err test",
+			ctx:  context.WithValue(context.Background(), userCtx, 12),
+			want: want{
+				res: "",
+				err: errors.New("user id is of invalid type int"),
 			},
 		},
 	}

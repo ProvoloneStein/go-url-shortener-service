@@ -17,7 +17,6 @@ func TestHandler_userIdentity(t *testing.T) {
 	// Init Test Table
 	type mockGenerateTokenBehavior func(r *mock_handlers.MockService)
 	type mockParseTokenBehavior func(r *mock_handlers.MockService)
-	type mockPingBehavior func(r *mock_handlers.MockService)
 
 	type want struct {
 		statusCode int
@@ -28,11 +27,10 @@ func TestHandler_userIdentity(t *testing.T) {
 		cookieVal         string
 		mockGenerateToken mockGenerateTokenBehavior
 		mockParseToken    mockParseTokenBehavior
-		mockPing          mockPingBehavior
 		want              want
 	}{
 		{
-			name:      "good test generate token",
+			name:      "ok test",
 			cookieVal: "",
 			mockGenerateToken: func(r *mock_handlers.MockService) {
 				r.EXPECT().GenerateToken(gomock.AssignableToTypeOf(reflect.TypeOf((*context.Context)(nil)).Elem())).
@@ -40,9 +38,6 @@ func TestHandler_userIdentity(t *testing.T) {
 			},
 			mockParseToken: func(r *mock_handlers.MockService) {
 				r.EXPECT().ParseToken(gomock.AssignableToTypeOf("string")).Return("123", nil).MaxTimes(1)
-			},
-			mockPing: func(r *mock_handlers.MockService) {
-				r.EXPECT().Ping().Return(nil).MaxTimes(1)
 			},
 			want: want{
 				statusCode: 200,
@@ -58,9 +53,6 @@ func TestHandler_userIdentity(t *testing.T) {
 			mockParseToken: func(r *mock_handlers.MockService) {
 				r.EXPECT().ParseToken(gomock.AssignableToTypeOf("string")).Return("123", nil).MaxTimes(1)
 			},
-			mockPing: func(r *mock_handlers.MockService) {
-				r.EXPECT().Ping().Return(nil).MaxTimes(1)
-			},
 			want: want{
 				statusCode: 200,
 			},
@@ -75,9 +67,6 @@ func TestHandler_userIdentity(t *testing.T) {
 			mockParseToken: func(r *mock_handlers.MockService) {
 				r.EXPECT().ParseToken(gomock.AssignableToTypeOf("string")).Return("123", nil).MaxTimes(1)
 			},
-			mockPing: func(r *mock_handlers.MockService) {
-				r.EXPECT().Ping().Return(nil).MaxTimes(1)
-			},
 			want: want{
 				statusCode: 500,
 			},
@@ -91,9 +80,6 @@ func TestHandler_userIdentity(t *testing.T) {
 			},
 			mockParseToken: func(r *mock_handlers.MockService) {
 				r.EXPECT().ParseToken(gomock.AssignableToTypeOf("string")).Return("123", errors.New("any err")).MaxTimes(1)
-			},
-			mockPing: func(r *mock_handlers.MockService) {
-				r.EXPECT().Ping().Return(nil).MaxTimes(1)
 			},
 			want: want{
 				statusCode: 401,
@@ -112,7 +98,6 @@ func TestHandler_userIdentity(t *testing.T) {
 			mockServices := mock_handlers.NewMockService(c)
 			tt.mockGenerateToken(mockServices)
 			tt.mockParseToken(mockServices)
-			tt.mockPing(mockServices)
 
 			middleware := userIdentity(mockServices, zap.NewNop())
 			handler := middleware(nextHandler)
@@ -127,6 +112,56 @@ func TestHandler_userIdentity(t *testing.T) {
 			defer result.Body.Close()
 
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
+		})
+	}
+}
+
+func TestHandler_gzipReadWriterHandler(t *testing.T) {
+
+	type want struct {
+		statusCode      int
+		contentEncoding string
+	}
+
+	tests := []struct {
+		name            string
+		acceptEncoding  string
+		contentEncoding string
+		want            want
+	}{
+		{
+			name:            "good test",
+			acceptEncoding:  "gzip",
+			contentEncoding: "gzip",
+			want: want{
+				statusCode:      200,
+				contentEncoding: "gzip",
+			},
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			// create a handler to use as "next" which will verify the request
+			nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			})
+			// Init Dependencies
+			c := gomock.NewController(t)
+			defer c.Finish()
+
+			middleware := gzipReadWriterHandler(zap.NewNop())
+			handler := middleware(nextHandler)
+
+			request := httptest.NewRequest(http.MethodGet, "/ping", nil)
+			request.Header.Add("Accept-Encoding", tt.acceptEncoding)
+			request.Header.Add("Content-Encoding", tt.contentEncoding)
+			w := httptest.NewRecorder()
+			handler.ServeHTTP(w, request)
+			result := w.Result()
+			defer result.Body.Close()
+
+			assert.Equal(t, tt.want.statusCode, result.StatusCode)
+			assert.Equal(t, tt.want.contentEncoding, result.Header.Get("Content-Encoding"))
 		})
 	}
 }

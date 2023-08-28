@@ -14,6 +14,8 @@ import (
 )
 
 // Repository - интерфейс с необходимым набором методов в репозитории.
+//
+//go:generate mockgen -source=services.go -destination=mocks/mock.go
 type Repository interface {
 	Create(ctx context.Context, userID, fullURL, shortURL string) (string, error)
 	BatchCreate(ctx context.Context, data []models.BatchCreateData) ([]models.BatchCreateResponse, error)
@@ -121,10 +123,12 @@ func (s *Service) GetListByUser(ctx context.Context, userID string) ([]models.Ge
 	return list, nil
 }
 
-func (s *Service) DeleteUserURLsBatch(ctx context.Context, userID string, data []string) {
+func (s *Service) DeleteUserURLsBatch(ctx context.Context, userID string, data []string) error {
 	if err := s.repo.DeleteUserURLsBatch(ctx, userID, data); err != nil {
 		s.logger.Error("ошибка при удалении", zap.Error(err))
+		return defaultServiceErrWrapper(err)
 	}
+	return nil
 }
 
 func (s *Service) Ping() error {

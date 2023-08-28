@@ -37,6 +37,9 @@ func gzipRead(logger *zap.Logger, r *http.Request) error {
 			if strings.Contains(value, "gzip") {
 				cr, err := gzip.NewReader(r.Body)
 				if err != nil {
+					if errors.Is(err, io.EOF) {
+						return nil
+					}
 					return fmt.Errorf("gzip reader error %w", err)
 				}
 				// меняем тело запроса на новое

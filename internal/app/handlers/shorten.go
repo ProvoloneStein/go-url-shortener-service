@@ -183,7 +183,11 @@ func (h *Handler) DeleteUserURLsBatch(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Неверное тело запрос", http.StatusBadRequest)
 		return
 	}
-	go h.services.DeleteUserURLsBatch(context.Background(), userID, reqBody)
+	go func() {
+		if err := h.services.DeleteUserURLsBatch(context.Background(), userID, reqBody); err != nil {
+			h.logger.Error("DeleteUserURLsBatch error", zap.Error(err))
+		}
+	}()
 	w.Header().Set(contentTypeHeader, contentTypeJSON)
 	w.WriteHeader(http.StatusAccepted)
 }

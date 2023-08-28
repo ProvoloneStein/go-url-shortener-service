@@ -25,7 +25,7 @@ type Service interface {
 	// GetListByUser - получить список связей короткий/длинный URL по пользователю.
 	GetListByUser(ctx context.Context, userID string) ([]models.GetURLResponse, error)
 	// DeleteUserURLsBatch - удалить связть короткий/длинный URL.
-	DeleteUserURLsBatch(ctx context.Context, userID string, data []string)
+	DeleteUserURLsBatch(ctx context.Context, userID string, data []string) error
 	// GenerateToken - получить токен авторизации.
 	GenerateToken(ctx context.Context) (string, error)
 	// ParseToken - расшифровать токен авторизации.
