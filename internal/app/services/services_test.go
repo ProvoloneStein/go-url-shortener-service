@@ -94,7 +94,7 @@ func TestService_BatchCreate(t *testing.T) {
 			name:   "ok",
 			ctx:    context.Background(),
 			userID: "123",
-			data:   []models.BatchCreateRequest{models.BatchCreateRequest{"dsadas", "dsadas"}},
+			data:   []models.BatchCreateRequest{models.BatchCreateRequest{URL: "dsadas", UUID: "dsadas"}},
 			repoFunc: func(r *mock_services.MockRepository, ctx context.Context, shortURL string) {
 				r.EXPECT().BatchCreate(ctx, gomock.Any()).Return([]models.BatchCreateResponse{}, nil).MaxTimes(1)
 			},
@@ -203,11 +203,11 @@ func TestService_GetListByUser(t *testing.T) {
 			userID: "123",
 			repoFunc: func(r *mock_services.MockRepository, ctx context.Context, userID string) {
 				r.EXPECT().GetListByUser(ctx, userID).Return([]models.GetURLResponse{models.GetURLResponse{
-					"sdsd", "sdds"}}, nil).MaxTimes(1)
+					ShortURL: "sdsd", URL: "sdds"}}, nil).MaxTimes(1)
 			},
 			want: want{
 				res: []models.GetURLResponse{models.GetURLResponse{
-					"sdsd", "sdds"}},
+					ShortURL: "sdsd", URL: "sdds"}},
 				isErr: false,
 			},
 		},
@@ -217,11 +217,11 @@ func TestService_GetListByUser(t *testing.T) {
 			userID: "123",
 			repoFunc: func(r *mock_services.MockRepository, ctx context.Context, userID string) {
 				r.EXPECT().GetListByUser(ctx, userID).Return([]models.GetURLResponse{models.GetURLResponse{
-					"sdsd", "sdds"}}, errors.New("err")).MaxTimes(1)
+					ShortURL: "sdsd", URL: "sdds"}}, errors.New("err")).MaxTimes(1)
 			},
 			want: want{
 				res: []models.GetURLResponse{models.GetURLResponse{
-					"sdsd", "sdds"}},
+					ShortURL: "sdsd", URL: "sdds"}},
 				isErr: true,
 			},
 		},
