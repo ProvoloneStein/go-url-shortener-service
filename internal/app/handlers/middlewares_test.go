@@ -23,10 +23,10 @@ func TestHandler_userIdentity(t *testing.T) {
 	}
 
 	tests := []struct {
-		name              string
-		cookieVal         string
 		mockGenerateToken mockGenerateTokenBehavior
 		mockParseToken    mockParseTokenBehavior
+		name              string
+		cookieVal         string
 		want              want
 	}{
 		{
@@ -109,7 +109,10 @@ func TestHandler_userIdentity(t *testing.T) {
 			w := httptest.NewRecorder()
 			handler.ServeHTTP(w, request)
 			result := w.Result()
-			defer result.Body.Close()
+			defer func() {
+				deferErr := result.Body.Close()
+				assert.NoError(t, deferErr)
+			}()
 
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
 		})
@@ -119,8 +122,8 @@ func TestHandler_userIdentity(t *testing.T) {
 func TestHandler_gzipReadWriterHandler(t *testing.T) {
 
 	type want struct {
-		statusCode      int
 		contentEncoding string
+		statusCode      int
 	}
 
 	tests := []struct {
@@ -158,7 +161,10 @@ func TestHandler_gzipReadWriterHandler(t *testing.T) {
 			w := httptest.NewRecorder()
 			handler.ServeHTTP(w, request)
 			result := w.Result()
-			defer result.Body.Close()
+			defer func() {
+				deferErr := result.Body.Close()
+				assert.NoError(t, deferErr)
+			}()
 
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
 			assert.Equal(t, tt.want.contentEncoding, result.Header.Get("Content-Encoding"))

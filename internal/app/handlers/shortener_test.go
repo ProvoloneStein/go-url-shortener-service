@@ -131,7 +131,10 @@ func TestHandler_CreateShortURL(t *testing.T) {
 			w := httptest.NewRecorder()
 			handlers.CreateShortURL(w, request)
 			result := w.Result()
-			defer result.Body.Close()
+			defer func() {
+				deferErr := result.Body.Close()
+				assert.NoError(t, deferErr)
+			}()
 			respBody, _ := io.ReadAll(result.Body)
 
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
@@ -246,7 +249,10 @@ func TestHandler_GetByShort(t *testing.T) {
 			w := httptest.NewRecorder()
 			handlers.GetByShort(w, request)
 			result := w.Result()
-			defer result.Body.Close()
+			defer func() {
+				deferErr := result.Body.Close()
+				assert.NoError(t, deferErr)
+			}()
 
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
 			assert.Equal(t, tt.want.contentType, result.Header.Get(contentTypeHeader))

@@ -35,25 +35,25 @@ func main() {
 			logger.Fatal("ошибка при иницилизации базы данных.", zap.Error(err))
 		}
 		defer func() {
-			if err := repos.Close(); err != nil {
-				logger.Error("ошибка при закрытии подключения базы данных.", zap.Error(err))
+			if deferErr := repos.Close(); deferErr != nil {
+				logger.Error("ошибка при закрытии подключения базы данных.", zap.Error(deferErr))
 			}
 		}()
 	case config.FileStorage == "":
 		repos = repositories.NewLocalRepository(logger, config)
 	default:
-		file, err := os.OpenFile(config.FileStorage, os.O_CREATE|os.O_RDWR, filePerms)
-		if err != nil {
-			logger.Fatal("ошибка при попытке открытия файла", zap.Error(err))
+		file, repoInitErr := os.OpenFile(config.FileStorage, os.O_CREATE|os.O_RDWR, filePerms)
+		if repoInitErr != nil {
+			logger.Fatal("ошибка при попытке открытия файла", zap.Error(repoInitErr))
 		}
 		defer func() {
-			if err := file.Close(); err != nil {
-				logger.Error("ошибка при закрытии файлового репозитория.", zap.Error(err))
+			if deferErr := file.Close(); deferErr != nil {
+				logger.Error("ошибка при закрытии файлового репозитория.", zap.Error(deferErr))
 			}
 		}()
-		repos, err = repositories.NewFileRepository(config, logger, file)
-		if err != nil {
-			logger.Fatal("ошибка при иницилизации файлового репозитория.", zap.Error(err))
+		repos, repoInitErr = repositories.NewFileRepository(config, logger, file)
+		if repoInitErr != nil {
+			logger.Fatal("ошибка при иницилизации файлового репозитория.", zap.Error(repoInitErr))
 		}
 	}
 	services := services.NewService(logger, config, repos)

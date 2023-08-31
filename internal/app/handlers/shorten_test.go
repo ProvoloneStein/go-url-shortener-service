@@ -162,7 +162,10 @@ func TestHandler_CreateShortURLByJSON(t *testing.T) {
 			w := httptest.NewRecorder()
 			handlers.CreateShortURLByJSON(w, request)
 			result := w.Result()
-			defer result.Body.Close()
+			defer func() {
+				deferErr := result.Body.Close()
+				assert.NoError(t, deferErr)
+			}()
 
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
 			assert.Equal(t, tt.want.contentType, result.Header.Get(contentTypeHeader))
@@ -179,11 +182,11 @@ func TestHandler_BatchCreateURLByJSON(t *testing.T) {
 	}
 
 	tests := []struct {
-		name         string
-		body         []map[string]string
-		userID       string
 		mockBehavior mockBehavior
+		name         string
+		userID       string
 		contentType  string
+		body         []map[string]string
 		want         want
 	}{
 		{
@@ -297,7 +300,10 @@ func TestHandler_BatchCreateURLByJSON(t *testing.T) {
 			w := httptest.NewRecorder()
 			handlers.BatchCreateURLByJSON(w, request)
 			result := w.Result()
-			defer result.Body.Close()
+			defer func() {
+				deferErr := result.Body.Close()
+				assert.NoError(t, deferErr)
+			}()
 
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
 		})
@@ -313,9 +319,9 @@ func TestHandler_GetUserURLs(t *testing.T) {
 	}
 
 	tests := []struct {
+		mockBehavior mockBehavior
 		name         string
 		userID       string
-		mockBehavior mockBehavior
 		want         want
 	}{
 		{
@@ -391,7 +397,10 @@ func TestHandler_GetUserURLs(t *testing.T) {
 			w := httptest.NewRecorder()
 			handlers.GetUserURLs(w, request)
 			result := w.Result()
-			defer result.Body.Close()
+			defer func() {
+				deferErr := result.Body.Close()
+				assert.NoError(t, deferErr)
+			}()
 
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
 		})
@@ -407,10 +416,10 @@ func TestHandler_DeleteUserURLsBatch(t *testing.T) {
 	}
 
 	tests := []struct {
+		mockBehavior mockBehavior
 		name         string
 		userID       string
 		body         []string
-		mockBehavior mockBehavior
 		want         want
 	}{
 		{
@@ -459,7 +468,10 @@ func TestHandler_DeleteUserURLsBatch(t *testing.T) {
 			w := httptest.NewRecorder()
 			handlers.DeleteUserURLsBatch(w, request)
 			result := w.Result()
-			defer result.Body.Close()
+			defer func() {
+				deferErr := result.Body.Close()
+				assert.NoError(t, deferErr)
+			}()
 
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
 		})

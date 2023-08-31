@@ -106,9 +106,9 @@ func userIdentity(services Service, logger *zap.Logger) func(http.Handler) http.
 				if !errors.Is(err, http.ErrNoCookie) {
 					logger.Error("ошибка получения токена", zap.Error(err))
 				}
-				val, err := services.GenerateToken(r.Context())
-				if err != nil {
-					logger.Error("ошибка при генерации токена", zap.Error(err))
+				val, serviceErr := services.GenerateToken(r.Context())
+				if serviceErr != nil {
+					logger.Error("ошибка при генерации токена", zap.Error(serviceErr))
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
@@ -120,8 +120,8 @@ func userIdentity(services Service, logger *zap.Logger) func(http.Handler) http.
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
-			ctxuser := context.WithValue(r.Context(), userCtx, userID)
-			next.ServeHTTP(w, r.WithContext(ctxuser))
+			ctxUser := context.WithValue(r.Context(), userCtx, userID)
+			next.ServeHTTP(w, r.WithContext(ctxUser))
 		})
 	}
 }
