@@ -15,6 +15,7 @@ import (
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/logger"
 )
 
+// filePerms - стандартные права файлового репозитория.
 const filePerms = 0600
 
 func main() {

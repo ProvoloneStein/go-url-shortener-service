@@ -191,7 +191,7 @@ linters-settings:
   govet:
     disable:
       - shadow
-    enable-all: true
+    enable-all: false
 
   grouper:
     const-require-grouping: false

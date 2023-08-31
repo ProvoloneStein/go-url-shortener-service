@@ -5,23 +5,32 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"go.uber.org/zap"
 
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/logger"
 )
 
-const contenntTypeHeader = "Content-Type"
+const contentTypeHeader = "Content-Type"
 
+// Service -  интерфейс с необходимым набором методов сервиса.
+//
 //go:generate mockgen -source=handlers.go -destination=mocks/mock.go
 type Service interface {
 	CreateShortURL(ctx context.Context, userID, fullURL string) (string, error)
 	BatchCreate(ctx context.Context, userID string, data []models.BatchCreateRequest) ([]models.BatchCreateResponse, error)
+	// GetFullByID - получить полный URL по короткому URL.
 	GetFullByID(ctx context.Context, shortURL string) (string, error)
+	// GetListByUser - получить список связей короткий/длинный URL по пользователю.
 	GetListByUser(ctx context.Context, userID string) ([]models.GetURLResponse, error)
-	DeleteUserURLsBatch(ctx context.Context, userID string, data []string)
+	// DeleteUserURLsBatch - удалить связть короткий/длинный URL.
+	DeleteUserURLsBatch(ctx context.Context, userID string, data []string) error
+	// GenerateToken - получить токен авторизации.
 	GenerateToken(ctx context.Context) (string, error)
+	// ParseToken - расшифровать токен авторизации.
 	ParseToken(accessToken string) (string, error)
+	// Ping - проверить доступность сервиса.
 	Ping() error
 }
 
@@ -39,18 +48,20 @@ func (h *Handler) InitHandler() *chi.Mux {
 	router.Use(logger.RequestLogger(h.logger))
 	router.Use(gzipReadWriterHandler(h.logger))
 	router.Use(userIdentity(h.services, h.logger))
+	router.Mount("/debug", middleware.Profiler())
 	router.Get("/ping", h.pingDB)
-	router.Post("/", h.createShortURL)
-	router.Get("/{id}", h.getByShort)
+
+	router.Post("/", h.CreateShortURL)
+	router.Get("/{id}", h.GetByShort)
 
 	router.Route("/api", func(r chi.Router) {
 		r.Route("/shorten", func(r chi.Router) {
-			r.Post("/", h.createShortURLByJSON)
-			r.Post("/batch", h.batchCreateURLByJSON)
+			r.Post("/", h.CreateShortURLByJSON)
+			r.Post("/batch", h.BatchCreateURLByJSON)
 		})
 		r.Route("/user", func(r chi.Router) {
-			r.Get("/urls", h.getUserURLs)
-			r.Delete("/urls", h.deleteUserURLsBatch)
+			r.Get("/urls", h.GetUserURLs)
+			r.Delete("/urls", h.DeleteUserURLsBatch)
 		})
 	})
 
