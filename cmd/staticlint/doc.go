@@ -31,85 +31,17 @@ Available since
 
 # SA4030 : Ineffective attempt at generating random number
 
-Functions in the math/rand package that accept upper limits, such
-as Intn, generate random numbers in the half-open interval [0,n). In
-other words, the generated numbers will be >= 0 and < n – they
-don't include n. rand.Intn(1) therefore doesn't generate 0
-or 1, it always generates 0.
-
-Available since
-    2022.1
-
-
-
 # SA9002 : Using a non-octal os.FileMode that looks like it was meant to be in octal.
-
-Available since
-    2017.1
-
-
 
 # SA1028 : sort.Slice can only be used on slices
 
-The first argument of sort.Slice must be a slice.
-
-Available since
-    2020.1
-
-
-
 # SA2003 : Deferred Lock right after locking, likely meant to defer Unlock instead
-
-Available since
-    2017.1
-
-
 
 # SA1003 : Unsupported argument to functions in encoding/binary
 
-The encoding/binary package can only serialize types with known sizes.
-This precludes the use of the int and uint types, as their sizes
-differ on different architectures. Furthermore, it doesn't support
-serializing maps, channels, strings, or functions.
-
-Before Go 1.8, bool wasn't supported, either.
-
-Available since
-    2017.1
-
-
-
 # SA6002 : Storing non-pointer values in sync.Pool allocates memory
 
-A sync.Pool is used to avoid unnecessary allocations and reduce the
-amount of work the garbage collector has to do.
-
-When passing a value that is not a pointer to a function that accepts
-an interface, the value needs to be placed on the heap, which means an
-additional allocation. Slices are a common thing to put in sync.Pools,
-and they're structs with 3 fields (length, capacity, and a pointer to
-an array). In order to avoid the extra allocation, one should store a
-pointer to the slice instead.
-
-See the comments on https://go-review.googlesource.com/c/go/+/24371
-that discuss this problem.
-
-Available since
-    2017.1
-
-
-
 # SA1016 : Trapping a signal that cannot be trapped
-
-Not all signals can be intercepted by a process. Specifically, on
-UNIX-like systems, the syscall.SIGKILL and syscall.SIGSTOP signals are
-never passed to the process, but instead handled directly by the
-kernel. It is therefore pointless to try and handle these signals.
-
-Available since
-    2017.1
-
-
 
 # SA1021 : Using bytes.Equal to compare two net.IP
 
@@ -277,31 +209,6 @@ Available since
 
 
 # SA6005 : Inefficient string comparison with strings.ToLower or strings.ToUpper
-
-Converting two strings to the same case and comparing them like so
-
-    if strings.ToLower(s1) == strings.ToLower(s2) {
-        ...
-    }
-
-is significantly more expensive than comparing them with
-strings.EqualFold(s1, s2). This is due to memory usage as well as
-computational complexity.
-
-strings.ToLower will have to allocate memory for the new strings, as
-well as convert both strings fully, even if they differ on the very
-first byte. strings.EqualFold, on the other hand, compares the strings
-one character at a time. It doesn't need to create two intermediate
-strings and can return as soon as the first non-matching character has
-been found.
-
-For a more in-depth explanation of this issue, see
-https://blog.digitalocean.com/how-to-efficiently-compare-strings-in-go/
-
-Available since
-    2019.2
-
-
 
 # SA1008 : Non-canonical key in http.Header map
 
@@ -576,88 +483,15 @@ Available since
 
 # SA6001 : Missing an optimization opportunity when indexing maps by byte slices
 
-Map keys must be comparable, which precludes the use of byte slices.
-This usually leads to using string keys and converting byte slices to
-strings.
-
-Normally, a conversion of a byte slice to a string needs to copy the data and
-causes allocations. The compiler, however, recognizes m[string(b)] and
-uses the data of b directly, without copying it, because it knows that
-the data can't change during the map lookup. This leads to the
-counter-intuitive situation that
-
-    k := string(b)
-    println(m[k])
-    println(m[k])
-
-will be less efficient than
-
-    println(m[string(b)])
-    println(m[string(b)])
-
-because the first version needs to copy and allocate, while the second
-one does not.
-
-For some history on this optimization, check out commit
-f5f5a8b6209f84961687d993b93ea0d397f5d5bf in the Go repository.
-
-Available since
-    2017.1
-
-
-
 # SA9008 : else branch of a type assertion is probably not reading the right value
-
-When declaring variables as part of an if statement (like in 'if
-foo := ...; foo {'), the same variables will also be in the scope of
-the else branch. This means that in the following example
-
-    if x, ok := x.(int); ok {
-        // ...
-    } else {
-        fmt.Printf("unexpected type %T", x)
-    }
-
-x in the else branch will refer to the x from x, ok
-:=; it will not refer to the x that is being type-asserted. The
-result of a failed type assertion is the zero value of the type that
-is being asserted to, so x in the else branch will always have the
-value 0 and the type int.
-
-Available since
-    2022.1
-
-
 
 # SA1014 : Non-pointer value passed to Unmarshal or Decode
 
-Available since
-    2017.1
-
-
-
 # SA4004 : The loop exits unconditionally after one iteration
-
-Available since
-    2017.1
-
-
 
 # SA1023 : Modifying the buffer in an io.Writer implementation
 
-Write must not modify the slice data, even temporarily.
-
-Available since
-    2017.1
-
-
-
 # SA5001 : Deferring Close before checking for a possible error
-
-Available since
-    2017.1
-
-
 
 # SA6003 : Converting a string to a slice of runes before ranging over it
 
@@ -1091,19 +925,10 @@ Available since
 
 
 
-# SA1015 : Using time.Tick in a way that will leak. Consider using time.NewTicker, and only use time.Tick in tests, commands and endless functions
-
-Available since
-    2017.1
-
-
+# SA1015 : Using time.Tick in a way that will leak.
+Consider using time.NewTicker, and only use time.Tick in tests, commands and endless functions
 
 # SA1025 : It is not possible to use (*time.Timer).Reset's return value correctly
-
-Available since
-    2019.1
-
-
 
 # SA1029 : Inappropriate key in call to context.WithValue
 
@@ -1300,19 +1125,9 @@ Available since
 
 
 
-# SA4014 : An if/else if chain has repeated conditions and no side-effects; if the condition didn't match the first time, it won't match the second time, either
-
-Available since
-    2017.1
-
-
+# SA4014 : An if/else if chain has repeated conditions and no side-effects.
 
 # SA4021 : 'x = append(y)' is equivalent to 'x = y'
-
-Available since
-    2019.2
-
-
 
 # SA1007 : Invalid URL in net/url.Parse
 
@@ -1425,26 +1240,7 @@ The correct code is:
 
 # directive : check Go toolchain directives such as //go:debug
 
-This analyzer checks for problems with known Go toolchain directives
-in all Go source files in a package directory, even those excluded by
-//go:build constraints, and all non-Go source files too.
-
-For //go:debug (see https://go.dev/doc/godebug), the analyzer checks
-that the directives are placed only in Go source files, only above the
-package comment, and only in package main or *_test.go files.
-
-Support for other known directives may be added in the future.
-
-This analyzer does not check //go:build, which is handled by the
-buildtag analyzer.
-
-
-
 # errorsas : report passing non-pointer or non-error values to errors.As
-
-The errorsas analysis reports calls to errors.As where the type
-of the second argument is not a pointer to a type implementing error.
-
 
 # fieldalignment : find structs that would use less memory if their fields were sorted
 
@@ -1711,10 +1507,6 @@ and
 
 # sortslice : check the argument type of sort.Slice
 
-sort.Slice requires an argument of a slice type. Check that
-the interface{} value passed to sort.Slice is actually a slice.
-
-
 # stdmethods : check signature of methods of well-known interfaces
 
 Sometimes a type may be intended to satisfy an interface but may fail to
@@ -1858,7 +1650,7 @@ uses certain features associated with generic programming in Go.
 # errcheck : check for unchecked errors
 
 
-# ruleguard : The most opinionated Go source code linter
+# ruleguard : The most opinionated Go source code linter.
 
 */
 package main

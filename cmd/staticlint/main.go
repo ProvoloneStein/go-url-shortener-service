@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
+	errname "github.com/Antonboom/errname/pkg/analyzer"
 	gocritic "github.com/go-critic/go-critic/checkers/analyzer"
-	"github.com/kisielk/errcheck/errcheck"
 	"go/ast"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/multichecker"
@@ -70,33 +70,28 @@ func run(pass *analysis.Pass) (interface{}, error) {
 						pass.Reportf(x.Pos(), "os.Exit returns")
 					}
 				}
-
 			}
 		}
 	}
 
-	if pass.Pkg.Name() != "main" {
-		return nil, nil
-	}
-	for _, file := range pass.Files {
-		if file.Name.String() != "main" {
-			continue
-		}
-
-		ast.Inspect(file, func(node ast.Node) bool {
-			if x, ok := node.(*ast.ExprStmt); ok {
-				expr(x)
+	if pass.Pkg.Name() == "main" {
+		for _, file := range pass.Files {
+			if file.Name.String() != "main" {
+				continue
 			}
-			return true
-		})
+
+			ast.Inspect(file, func(node ast.Node) bool {
+				if x, ok := node.(*ast.ExprStmt); ok {
+					expr(x)
+				}
+				return true
+			})
+		}
 	}
 	return nil, nil
 }
 
 func main() {
-
-	var customChecker []*analysis.Analyzer
-
 	passesChecker := []*analysis.Analyzer{
 		asmdecl.Analyzer,
 		assign.Analyzer,
@@ -145,23 +140,14 @@ func main() {
 		usesgenerics.Analyzer,
 	}
 
+	customChecker := []*analysis.Analyzer{ErrCheckAnalyzer, errname.New(), gocritic.Analyzer}
+
 	// staticChecker
 	for _, v := range staticcheck.Analyzers {
 		customChecker = append(customChecker, v.Analyzer)
 	}
 
 	customChecker = append(customChecker, passesChecker...)
-
-	customChecker = append(customChecker, ErrCheckAnalyzer)
-
-	customChecker = append(customChecker, errcheck.Analyzer)
-	customChecker = append(customChecker, gocritic.Analyzer)
-
-	for _, val := range customChecker {
-		fmt.Println()
-		fmt.Println("#", val.Name, ":", val.Doc)
-		fmt.Println()
-	}
 
 	multichecker.Main(
 		customChecker...,
