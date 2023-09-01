@@ -110,8 +110,8 @@ func TestHandler_userIdentity(t *testing.T) {
 			handler.ServeHTTP(w, request)
 			result := w.Result()
 			defer func() {
-				deferErr := result.Body.Close()
-				assert.NoError(t, deferErr)
+				err := result.Body.Close()
+				assert.NoError(t, err)
 			}()
 
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
