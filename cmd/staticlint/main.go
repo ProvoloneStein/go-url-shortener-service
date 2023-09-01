@@ -1,7 +1,3 @@
-// Модуль подключает линтеры к приложению.
-// Пример запуска линтера (go run cmd/staticlint/main.go -all ./...)
-// Линтеры можно запускать отдельно
-// Подробнее (go run cmd/staticlint/main.go help)
 package main
 
 import (
@@ -160,6 +156,12 @@ func main() {
 
 	customChecker = append(customChecker, errcheck.Analyzer)
 	customChecker = append(customChecker, gocritic.Analyzer)
+
+	for _, val := range customChecker {
+		fmt.Println()
+		fmt.Println("#", val.Name, ":", val.Doc)
+		fmt.Println()
+	}
 
 	multichecker.Main(
 		customChecker...,

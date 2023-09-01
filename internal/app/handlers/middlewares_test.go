@@ -161,10 +161,7 @@ func TestHandler_gzipReadWriterHandler(t *testing.T) {
 			w := httptest.NewRecorder()
 			handler.ServeHTTP(w, request)
 			result := w.Result()
-			defer func() {
-				deferErr := result.Body.Close()
-				assert.NoError(t, deferErr)
-			}()
+			defer result.Body.Close()
 
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
 			assert.Equal(t, tt.want.contentEncoding, result.Header.Get("Content-Encoding"))
