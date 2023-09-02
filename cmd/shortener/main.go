@@ -24,17 +24,17 @@ var buildCommit string
 
 func main() {
 	if buildVersion != "" {
-		fmt.Println(fmt.Sprintf("Build version: %s", buildVersion))
+		fmt.Printf("Build version: %s\n", buildVersion)
 	} else {
 		fmt.Println("Build version: N/A")
 	}
 	if buildDate != "" {
-		fmt.Println(fmt.Sprintf("Build date: %s", buildDate))
+		fmt.Printf("Build date: %s\n", buildDate)
 	} else {
 		fmt.Println("Build date: N/A")
 	}
 	if buildCommit != "" {
-		fmt.Println(fmt.Sprintf("Build commit: %s", buildCommit))
+		fmt.Printf("Build commit: %s\n", buildCommit)
 	} else {
 		fmt.Println("Build commit: N/A")
 	}
