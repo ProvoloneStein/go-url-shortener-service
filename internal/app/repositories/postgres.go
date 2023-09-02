@@ -222,18 +222,18 @@ func (r *DBRepository) BatchCreate(ctx context.Context,
 	return response, nil
 }
 
-func (r *DBRepository) BatchDelete(ctx context.Context, shortURL string) (string, error) {
-	var fullURL string
-	row := r.db.QueryRowContext(ctx, "SELECT url FROM shortener WHERE  shorten = $1", shortURL)
-	if err := row.Scan(&fullURL); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return "", errWithVal(ErrURLNotFound, shortURL)
-		}
-		r.logger.Error(defaultRepoError, zap.Error(err))
-		return "", defaultRepoErrWrapper(err)
-	}
-	return fullURL, nil
-}
+//func (r *DBRepository) BatchDelete(ctx context.Context, shortURL string) (string, error) {
+//	var fullURL string
+//	row := r.db.QueryRowContext(ctx, "SELECT url FROM shortener WHERE  shorten = $1", shortURL)
+//	if err := row.Scan(&fullURL); err != nil {
+//		if errors.Is(err, sql.ErrNoRows) {
+//			return "", errWithVal(ErrURLNotFound, shortURL)
+//		}
+//		r.logger.Error(defaultRepoError, zap.Error(err))
+//		return "", defaultRepoErrWrapper(err)
+//	}
+//	return fullURL, nil
+//}
 
 func (r *DBRepository) GetByShort(ctx context.Context, shortURL string) (string, error) {
 	var fullURL string
