@@ -1,10 +1,8 @@
 package main
 
 import (
-	"fmt"
 	errname "github.com/Antonboom/errname/pkg/analyzer"
 	gocritic "github.com/go-critic/go-critic/checkers/analyzer"
-	"go/ast"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/multichecker"
 	"golang.org/x/tools/go/analysis/passes/asmdecl"
@@ -55,42 +53,6 @@ import (
 	"honnef.co/go/tools/staticcheck"
 )
 
-var ErrCheckAnalyzer = &analysis.Analyzer{
-	Name: "osExit",
-	Doc:  "check for os.Exit in main",
-	Run:  run,
-}
-
-func run(pass *analysis.Pass) (interface{}, error) {
-	expr := func(x *ast.ExprStmt) {
-		if call, ok := x.X.(*ast.CallExpr); ok {
-			if funExpr, ok := call.Fun.(*ast.SelectorExpr); ok {
-				if pkgExpr, ok := funExpr.X.(*ast.Ident); ok {
-					if fmt.Sprintf("%s.%s", pkgExpr.Name, funExpr.Sel.Name) == "os.Exit" {
-						pass.Reportf(x.Pos(), "os.Exit returns")
-					}
-				}
-			}
-		}
-	}
-
-	if pass.Pkg.Name() == "main" {
-		for _, file := range pass.Files {
-			if file.Name.String() != "main" {
-				continue
-			}
-
-			ast.Inspect(file, func(node ast.Node) bool {
-				if x, ok := node.(*ast.ExprStmt); ok {
-					expr(x)
-				}
-				return true
-			})
-		}
-	}
-	return nil, nil
-}
-
 func main() {
 	passesChecker := []*analysis.Analyzer{
 		asmdecl.Analyzer,
@@ -140,7 +102,7 @@ func main() {
 		usesgenerics.Analyzer,
 	}
 
-	customChecker := []*analysis.Analyzer{ErrCheckAnalyzer, errname.New(), gocritic.Analyzer}
+	customChecker := []*analysis.Analyzer{OSExitCheckAnalyzer, errname.New(), gocritic.Analyzer}
 
 	// staticChecker
 	for _, v := range staticcheck.Analyzers {
