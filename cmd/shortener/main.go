@@ -18,7 +18,26 @@ import (
 // filePerms - стандартные права файлового репозитория.
 const filePerms = 0600
 
+var buildVersion string
+var buildDate string
+var buildCommit string
+
 func main() {
+	if buildVersion != "" {
+		fmt.Println(fmt.Sprintf("Build version: %s", buildVersion))
+	} else {
+		fmt.Println("Build version: N/A")
+	}
+	if buildDate != "" {
+		fmt.Println(fmt.Sprintf("Build date: %s", buildDate))
+	} else {
+		fmt.Println("Build date: N/A")
+	}
+	if buildCommit != "" {
+		fmt.Println(fmt.Sprintf("Build commit: %s", buildCommit))
+	} else {
+		fmt.Println("Build commit: N/A")
+	}
 	config, err := configs.InitConfig()
 	var repos services.Repository
 	if err != nil {

@@ -19,6 +19,23 @@ godoc работает как веб-сервер и позволяет прос
 http://127.0.0.1:8080/pkg/github.com/ProvoloneStein/go-url-shortener-service/?m=all
 ```
 
+## Запуск приложения
+
+Стандартный запуск приложения: 
+```
+go run cmd/shortener/main.go
+```
+
+Запуск линтера:
+```
+go run cmd/staticlint/main.go
+```
+
+Запуск проекта с билд тэгами
+```
+go run -ldflags "-X main.buildVersion=v1.0.1 -X 'main.buildDate=$(date +'%Y/%m/%d %H:%M:%S')' -X 'main.buildCommit=$(git rev-parse HEAD)'" cmd/shortener/main.go
+```
+
 ## Начало работы
 
 1. Склонируйте репозиторий в любую подходящую директорию на вашем компьютере.
