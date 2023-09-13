@@ -23,11 +23,7 @@ func ExampleHandler_CreateShortURL() {
 		return
 	}
 
-	defer func() {
-		if deferErr := resp.Body.Close(); deferErr != nil {
-			return
-		}
-	}()
+	_ = resp.Body.Close()
 }
 
 func ExampleHandler_GetByShort() {
@@ -47,11 +43,7 @@ func ExampleHandler_GetByShort() {
 		return
 	}
 
-	defer func() {
-		if deferErr := resp.Body.Close(); deferErr != nil {
-			return
-		}
-	}()
+	_ = resp.Body.Close()
 }
 
 func ExampleHandler_CreateShortURLByJSON() {
@@ -79,11 +71,7 @@ func ExampleHandler_CreateShortURLByJSON() {
 		return
 	}
 
-	defer func() {
-		if deferErr := resp.Body.Close(); deferErr != nil {
-			return
-		}
-	}()
+	_ = resp.Body.Close()
 }
 
 func ExampleHandler_GetUserURLs() {
@@ -103,11 +91,7 @@ func ExampleHandler_GetUserURLs() {
 		return
 	}
 
-	defer func() {
-		if deferErr := resp.Body.Close(); deferErr != nil {
-			return
-		}
-	}()
+	_ = resp.Body.Close()
 }
 
 func ExampleHandler_DeleteUserURLsBatch() {
@@ -135,11 +119,7 @@ func ExampleHandler_DeleteUserURLsBatch() {
 		return
 	}
 
-	defer func() {
-		if deferErr := resp.Body.Close(); deferErr != nil {
-			return
-		}
-	}()
+	_ = resp.Body.Close()
 }
 
 func ExampleHandler_BatchCreateURLByJSON() {
@@ -174,9 +154,5 @@ func ExampleHandler_BatchCreateURLByJSON() {
 		return
 	}
 
-	defer func() {
-		if deferErr := resp.Body.Close(); deferErr != nil {
-			return
-		}
-	}()
+	_ = resp.Body.Close()
 }
