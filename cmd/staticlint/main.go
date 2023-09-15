@@ -1,9 +1,10 @@
 package main
 
 import (
+	"go/ast"
+
 	errname "github.com/Antonboom/errname/pkg/analyzer"
 	gocritic "github.com/go-critic/go-critic/checkers/analyzer"
-	"go/ast"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/multichecker"
 	"golang.org/x/tools/go/analysis/passes/asmdecl"
@@ -72,10 +73,8 @@ func findExitOnExpr(pass *analysis.Pass, x *ast.ExprStmt) {
 }
 
 func run(pass *analysis.Pass) (interface{}, error) {
-
 	if pass.Pkg.Name() == "main" {
 		for _, file := range pass.Files {
-
 			ast.Inspect(file, func(node ast.Node) bool {
 				switch val := node.(type) {
 				case *ast.FuncDecl:
@@ -89,7 +88,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			})
 		}
 	}
-	return nil, nil
+	return nil, nil //nolint:nilnil // default for run func
 }
 
 func main() {
