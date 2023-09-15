@@ -321,33 +321,6 @@ Likely what is intended is:
         v1.Interface() != v2.Interface()
         reflect.DeepEqual(v1.Interface(), v2.Interface())
 
-
-# shadow : check for possible unintended shadowing of variables
-
-This analyzer check for shadowed variables.
-A shadowed variable is a variable declared in an inner scope
-with the same name and type as a variable in an outer scope,
-and where the outer variable is mentioned after the inner one
-is declared.
-
-(This definition can be refined; the module generates too many
-false positives and is not yet enabled by default.)
-
-For example:
-
-        func BadRead(f *os.File, buf []byte) error {
-                var err error
-                for {
-                        n, err := f.Read(buf) // shadows the function variable 'err'
-                        if err != nil {
-                                break // causes return of wrong value
-                        }
-                        foo(buf)
-                }
-                return err
-        }
-
-
 # shift : check for shifts that equal or exceed the width of the integer
 
 

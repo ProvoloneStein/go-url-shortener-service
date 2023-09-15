@@ -33,7 +33,6 @@ import (
 	"golang.org/x/tools/go/analysis/passes/pkgfact"
 	"golang.org/x/tools/go/analysis/passes/printf"
 	"golang.org/x/tools/go/analysis/passes/reflectvaluecompare"
-	"golang.org/x/tools/go/analysis/passes/shadow"
 	"golang.org/x/tools/go/analysis/passes/shift"
 	"golang.org/x/tools/go/analysis/passes/sigchanyzer"
 	"golang.org/x/tools/go/analysis/passes/slog"
@@ -123,7 +122,6 @@ func main() {
 		pkgfact.Analyzer,
 		printf.Analyzer,
 		reflectvaluecompare.Analyzer,
-		shadow.Analyzer,
 		shift.Analyzer,
 		sigchanyzer.Analyzer,
 		slog.Analyzer,

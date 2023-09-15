@@ -61,18 +61,18 @@ func main() {
 	case config.FileStorage == "":
 		repos = repositories.NewLocalRepository(logger, config)
 	default:
-		file, repoInitErr := os.OpenFile(config.FileStorage, os.O_CREATE|os.O_RDWR, filePerms)
-		if repoInitErr != nil {
-			logger.Fatal("ошибка при попытке открытия файла", zap.Error(repoInitErr))
+		file, err := os.OpenFile(config.FileStorage, os.O_CREATE|os.O_RDWR, filePerms)
+		if err != nil {
+			logger.Fatal("ошибка при попытке открытия файла", zap.Error(err))
 		}
 		defer func() {
 			if deferErr := file.Close(); deferErr != nil {
 				logger.Error("ошибка при закрытии файлового репозитория.", zap.Error(deferErr))
 			}
 		}()
-		repos, repoInitErr = repositories.NewFileRepository(config, logger, file)
-		if repoInitErr != nil {
-			logger.Fatal("ошибка при иницилизации файлового репозитория.", zap.Error(repoInitErr))
+		repos, err = repositories.NewFileRepository(config, logger, file)
+		if err != nil {
+			logger.Fatal("ошибка при иницилизации файлового репозитория.", zap.Error(err))
 		}
 	}
 	services := services.NewService(logger, config, repos)
