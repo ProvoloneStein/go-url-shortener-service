@@ -78,7 +78,7 @@ func main() {
 	services := services.NewService(logger, config, repos)
 	handler := handlers.NewHandler(logger, services)
 	logger.Info(fmt.Sprintf("запускается сервер по адресу %s", config.Addr))
-	if err = server.Run(config.Addr, handler.InitHandler()); err != nil {
+	if err = server.Run(config.EnableHTTPS, config.Addr, handler.InitHandler()); err != nil {
 		logger.Fatal("ошибка при запуске сервера", zap.Error(err))
 	}
 }
