@@ -1,21 +1,50 @@
 package configs
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
+	"os"
+	"reflect"
 
 	"github.com/caarlos0/env/v8"
 )
 
 type AppConfig struct {
-	BaseURL     string `env:"BASE_URL"`
-	Addr        string `env:"SERVER_ADDRESS"`
-	FileStorage string `env:"FILE_STORAGE_PATH"`
-	DatabaseDSN string `env:"DATABASE_DSN"`
-	SigningKey  string `env:"SIGNING_KEY"`
+	BaseURL        string `env:"BASE_URL" json:"base_url"`
+	Addr           string `env:"SERVER_ADDRESS" json:"server_address"`
+	FileStorage    string `env:"FILE_STORAGE_PATH" json:"file_storage_path"`
+	DatabaseDSN    string `env:"DATABASE_DSN" json:"database_dsn"`
+	SigningKey     string `env:"SIGNING_KEY" json:"signing_key"`
+	EnableHTTPS    bool   `env:"ENABLE_HTTPS" json:"enable_https"`
+	configFileName string `env:"CONFIG" json:"-"`
 }
 
 const signingKey = "qrkjk#4#%35FSFJlja#4353KSFjH"
+
+func getFromFile(cfg *AppConfig) error {
+	plan, err := os.ReadFile(cfg.configFileName)
+	if err != nil {
+		return err
+	}
+	data := AppConfig{}
+	err = json.Unmarshal(plan, &data)
+	if err != nil {
+		return err
+	}
+
+	dataValueOf := reflect.ValueOf(&data)
+
+	cfgValueOf := reflect.ValueOf(cfg)
+	for i := 0; i < reflect.TypeOf(*cfg).NumField(); i++ {
+		if cfgValueOf.Elem().Field(i).IsZero() {
+			dataFieldValue := dataValueOf.Elem().FieldByName(reflect.TypeOf(*cfg).Field(i).Name)
+			cfgValueOf.Elem().Field(i).Set(dataFieldValue)
+		}
+
+	}
+	return nil
+}
 
 func InitConfig() (AppConfig, error) {
 	var config AppConfig
@@ -24,11 +53,19 @@ func InitConfig() (AppConfig, error) {
 	flag.StringVar(&config.Addr, "a", "localhost:8080", "address and port to run server")
 	flag.StringVar(&config.FileStorage, "f", "/tmp/short-url-db.json", "file storage path")
 	flag.StringVar(&config.DatabaseDSN, "d", "", "database connection dsn")
-	flag.StringVar(&config.SigningKey, "s", signingKey, "service signing key")
+	flag.StringVar(&config.SigningKey, "k", signingKey, "service signing key")
+	flag.BoolVar(&config.EnableHTTPS, "s", false, "service signing key")
+	flag.StringVar(&config.configFileName, "c", "configs/config.json", "config file name")
+	flag.StringVar(&config.configFileName, "config", "configs/config.json", "config file name")
 	flag.Parse()
 	err := env.Parse(&config)
 	if err != nil {
 		return config, fmt.Errorf("ошибка при получении переменных окружения: %w", err)
 	}
+	err = getFromFile(&config)
+	if err != nil {
+		return config, fmt.Errorf("ошибка при получении переменных окружения: %w", err)
+	}
+
 	return config, nil
 }
