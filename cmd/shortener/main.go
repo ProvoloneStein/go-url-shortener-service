@@ -18,7 +18,26 @@ import (
 // filePerms - стандартные права файлового репозитория.
 const filePerms = 0600
 
+var buildVersion string
+var buildDate string
+var buildCommit string
+
 func main() {
+	if buildVersion != "" {
+		fmt.Printf("Build version: %s\n", buildVersion)
+	} else {
+		fmt.Println("Build version: N/A")
+	}
+	if buildDate != "" {
+		fmt.Printf("Build date: %s\n", buildDate)
+	} else {
+		fmt.Println("Build date: N/A")
+	}
+	if buildCommit != "" {
+		fmt.Printf("Build commit: %s\n", buildCommit)
+	} else {
+		fmt.Println("Build commit: N/A")
+	}
 	config, err := configs.InitConfig()
 	var repos services.Repository
 	if err != nil {
@@ -35,8 +54,8 @@ func main() {
 			logger.Fatal("ошибка при иницилизации базы данных.", zap.Error(err))
 		}
 		defer func() {
-			if err := repos.Close(); err != nil {
-				logger.Error("ошибка при закрытии подключения базы данных.", zap.Error(err))
+			if deferErr := repos.Close(); deferErr != nil {
+				logger.Error("ошибка при закрытии подключения базы данных.", zap.Error(deferErr))
 			}
 		}()
 	case config.FileStorage == "":
@@ -47,8 +66,8 @@ func main() {
 			logger.Fatal("ошибка при попытке открытия файла", zap.Error(err))
 		}
 		defer func() {
-			if err := file.Close(); err != nil {
-				logger.Error("ошибка при закрытии файлового репозитория.", zap.Error(err))
+			if deferErr := file.Close(); deferErr != nil {
+				logger.Error("ошибка при закрытии файлового репозитория.", zap.Error(deferErr))
 			}
 		}()
 		repos, err = repositories.NewFileRepository(config, logger, file)

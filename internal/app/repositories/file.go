@@ -26,13 +26,13 @@ type ShorterRecord struct {
 }
 
 type FileRepository struct {
-	uuid   int
-	store  map[string][3]string
 	writer *bufio.Writer
 	reader *bufio.Reader
 	file   *os.File
 	logger *zap.Logger
+	store  map[string][3]string
 	cfg    configs.AppConfig
+	uuid   int
 }
 
 func NewFileRepository(cfg configs.AppConfig, logger *zap.Logger, file *os.File) (*FileRepository, error) {

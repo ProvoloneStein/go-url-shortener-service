@@ -43,11 +43,11 @@ func (h *Handler) CreateShortURLByJSON(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	if err := json.Unmarshal(body, &requestBody); err != nil {
+	if unmarshalErr := json.Unmarshal(body, &requestBody); unmarshalErr != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
-	if _, err := govalidator.ValidateStruct(requestBody); err != nil {
+	if _, validateErr := govalidator.ValidateStruct(requestBody); validateErr != nil {
 		http.Error(w, "ошибка валидации тела запроса", http.StatusBadRequest)
 		return
 	}
@@ -97,7 +97,7 @@ func (h *Handler) BatchCreateURLByJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Ошибка при чтении тела запроса", http.StatusBadRequest)
 		return
 	}
-	if err := json.Unmarshal(body, &requestBody); err != nil {
+	if unmarshalErr := json.Unmarshal(body, &requestBody); unmarshalErr != nil {
 		http.Error(w, "Неверное тело запрос", http.StatusBadRequest)
 		return
 	}
@@ -179,7 +179,7 @@ func (h *Handler) DeleteUserURLsBatch(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Ошибка при чтении тела запроса", http.StatusBadRequest)
 		return
 	}
-	if err := json.Unmarshal(body, &reqBody); err != nil {
+	if unmarshalErr := json.Unmarshal(body, &reqBody); unmarshalErr != nil {
 		http.Error(w, "Неверное тело запрос", http.StatusBadRequest)
 		return
 	}

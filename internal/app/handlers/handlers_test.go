@@ -23,7 +23,7 @@ func ExampleHandler_CreateShortURL() {
 		return
 	}
 
-	defer resp.Body.Close()
+	_ = resp.Body.Close()
 }
 
 func ExampleHandler_GetByShort() {
@@ -43,7 +43,7 @@ func ExampleHandler_GetByShort() {
 		return
 	}
 
-	defer resp.Body.Close()
+	_ = resp.Body.Close()
 }
 
 func ExampleHandler_CreateShortURLByJSON() {
@@ -71,7 +71,7 @@ func ExampleHandler_CreateShortURLByJSON() {
 		return
 	}
 
-	defer resp.Body.Close()
+	_ = resp.Body.Close()
 }
 
 func ExampleHandler_GetUserURLs() {
@@ -91,7 +91,7 @@ func ExampleHandler_GetUserURLs() {
 		return
 	}
 
-	defer resp.Body.Close()
+	_ = resp.Body.Close()
 }
 
 func ExampleHandler_DeleteUserURLsBatch() {
@@ -119,7 +119,7 @@ func ExampleHandler_DeleteUserURLsBatch() {
 		return
 	}
 
-	defer resp.Body.Close()
+	_ = resp.Body.Close()
 }
 
 func ExampleHandler_BatchCreateURLByJSON() {
@@ -154,5 +154,5 @@ func ExampleHandler_BatchCreateURLByJSON() {
 		return
 	}
 
-	defer resp.Body.Close()
+	_ = resp.Body.Close()
 }

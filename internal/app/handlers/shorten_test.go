@@ -179,11 +179,11 @@ func TestHandler_BatchCreateURLByJSON(t *testing.T) {
 	}
 
 	tests := []struct {
-		name         string
-		body         []map[string]string
-		userID       string
 		mockBehavior mockBehavior
+		name         string
+		userID       string
 		contentType  string
+		body         []map[string]string
 		want         want
 	}{
 		{
@@ -313,9 +313,9 @@ func TestHandler_GetUserURLs(t *testing.T) {
 	}
 
 	tests := []struct {
+		mockBehavior mockBehavior
 		name         string
 		userID       string
-		mockBehavior mockBehavior
 		want         want
 	}{
 		{
@@ -407,10 +407,10 @@ func TestHandler_DeleteUserURLsBatch(t *testing.T) {
 	}
 
 	tests := []struct {
+		mockBehavior mockBehavior
 		name         string
 		userID       string
 		body         []string
-		mockBehavior mockBehavior
 		want         want
 	}{
 		{

@@ -18,8 +18,8 @@ func TestService_CreateShortURL(t *testing.T) {
 	type mockRepo func(r *mock_services.MockRepository, ctx context.Context, userID, fullURL string)
 
 	type want struct {
-		res string
 		err error
+		res string
 	}
 
 	tests := []struct {
@@ -78,8 +78,8 @@ func TestService_BatchCreate(t *testing.T) {
 	type mockRepo func(r *mock_services.MockRepository, ctx context.Context, shortURL string)
 
 	type want struct {
-		res []models.BatchCreateResponse
 		err error
+		res []models.BatchCreateResponse
 	}
 
 	tests := []struct {
@@ -255,11 +255,11 @@ func TestService_DeleteUserURLsBatch(t *testing.T) {
 	}
 
 	tests := []struct {
-		name     string
+		repoFunc mockRepo
 		ctx      context.Context
+		name     string
 		userID   string
 		data     []string
-		repoFunc mockRepo
 		want     want
 	}{
 		{
@@ -315,8 +315,8 @@ func TestService_Ping(t *testing.T) {
 	}
 
 	tests := []struct {
-		name string
 		ping mockPing
+		name string
 		want want
 	}{
 		{

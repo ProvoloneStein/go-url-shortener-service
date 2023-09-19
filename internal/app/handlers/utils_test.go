@@ -10,8 +10,8 @@ import (
 func TestHandler_getUserID(t *testing.T) {
 	// Init Test Table
 	type want struct {
-		res string
 		err error
+		res string
 	}
 
 	tests := []struct {

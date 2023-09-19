@@ -13,8 +13,8 @@ import (
 func TestHandler_GenerateToken(t *testing.T) {
 
 	type want struct {
-		res string
 		err error
+		res string
 	}
 
 	tests := []struct {

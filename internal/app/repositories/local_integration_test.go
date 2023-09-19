@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"context"
-	"fmt"
 	"github.com/ProvoloneStein/go-url-shortener-service/configs"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
 	"github.com/stretchr/testify/assert"
@@ -12,8 +11,8 @@ import (
 
 func TestLocalRepository_Create(t *testing.T) {
 	type want struct {
-		res string
 		err error
+		res string
 	}
 
 	tests := []struct {
@@ -83,8 +82,8 @@ func TestLocalRepository_Create(t *testing.T) {
 
 func TestLocalRepository_BatchCreate(t *testing.T) {
 	type want struct {
-		res []models.BatchCreateResponse
 		err error
+		res []models.BatchCreateResponse
 	}
 
 	tests := []struct {
@@ -152,7 +151,6 @@ func TestLocalRepository_BatchCreate(t *testing.T) {
 			repository := LocalRepository{logger: zap.NewNop(), cfg: cfg, store: tt.store}
 
 			res, err := repository.BatchCreate(tt.ctx, tt.data)
-			fmt.Println(res, err)
 			assert.Equal(t, tt.want.res, res)
 			assert.ErrorIs(t, err, tt.want.err)
 		})
@@ -161,8 +159,8 @@ func TestLocalRepository_BatchCreate(t *testing.T) {
 
 func TestLocalRepository_GetByShort(t *testing.T) {
 	type want struct {
-		res string
 		err error
+		res string
 	}
 
 	tests := []struct {
@@ -218,7 +216,6 @@ func TestLocalRepository_GetByShort(t *testing.T) {
 			repository := LocalRepository{logger: zap.NewNop(), cfg: cfg, store: tt.store}
 
 			res, err := repository.GetByShort(tt.ctx, tt.shortURL)
-			fmt.Println(res, err)
 			assert.Equal(t, tt.want.res, res)
 			assert.ErrorIs(t, err, tt.want.err)
 		})
@@ -231,10 +228,10 @@ func TestLocalRepository_Ping(t *testing.T) {
 	}
 
 	tests := []struct {
-		name  string
-		ctx   context.Context
-		store map[string][3]string
 		want  want
+		store map[string][3]string
+		ctx   context.Context
+		name  string
 	}{
 		{
 			name: "ok test",
@@ -267,10 +264,10 @@ func TestLocalRepository_Close(t *testing.T) {
 	}
 
 	tests := []struct {
-		name  string
-		ctx   context.Context
-		store map[string][3]string
 		want  want
+		store map[string][3]string
+		ctx   context.Context
+		name  string
 	}{
 		{
 			name: "ok test",
@@ -299,13 +296,13 @@ func TestLocalRepository_Close(t *testing.T) {
 
 func TestLocalRepository_GetListByUser(t *testing.T) {
 	type want struct {
-		res []models.GetURLResponse
 		err error
+		res []models.GetURLResponse
 	}
 
 	tests := []struct {
-		name   string
 		ctx    context.Context
+		name   string
 		store  map[string][3]string
 		userID string
 		want   want
@@ -349,7 +346,6 @@ func TestLocalRepository_GetListByUser(t *testing.T) {
 			repository := LocalRepository{logger: zap.NewNop(), cfg: cfg, store: tt.store}
 
 			res, err := repository.GetListByUser(tt.ctx, tt.userID)
-			fmt.Println(res, err)
 			assert.Equal(t, tt.want.res, res)
 			assert.ErrorIs(t, err, tt.want.err)
 		})
@@ -362,12 +358,12 @@ func TestLocalRepository_DeleteUserURLsBatch(t *testing.T) {
 	}
 
 	tests := []struct {
+		want   want
 		name   string
 		ctx    context.Context
 		store  map[string][3]string
 		userID string
 		data   []string
-		want   want
 	}{
 		{
 			name:   "ok test",

@@ -148,11 +148,11 @@ func (r *DBRepository) BatchCreate(ctx context.Context,
 	}
 
 	for _, val := range data {
-		if err := r.validateUniqueShortURL(ctx, tx, val.ShortURL); err != nil {
+		if validateErr := r.validateUniqueShortURL(ctx, tx, val.ShortURL); validateErr != nil {
 			if errDefer := tx.Rollback(); errDefer != nil {
 				r.logger.Error(txRollbackError, zap.Error(errDefer))
 			}
-			return []models.BatchCreateResponse{models.BatchCreateResponse{ShortURL: val.ShortURL, UUID: val.UUID}}, err
+			return []models.BatchCreateResponse{models.BatchCreateResponse{ShortURL: val.ShortURL, UUID: val.UUID}}, validateErr
 		}
 	}
 
@@ -181,14 +181,14 @@ func (r *DBRepository) BatchCreate(ctx context.Context,
 	// обрабатываем ответ
 	for rows.Next() {
 		var row = models.BatchCreateResponse{}
-		if err := rows.StructScan(&row); err != nil {
+		if scanErr := rows.StructScan(&row); scanErr != nil {
 			defer func() {
 				errDefer := tx.Rollback()
 				if errDefer != nil {
 					r.logger.Error(txRollbackError, zap.Error(errDefer))
 				}
 			}()
-			return nil, defaultRepoErrWrapper(err)
+			return nil, defaultRepoErrWrapper(scanErr)
 		}
 		row.ShortURL, err = url.JoinPath(r.cfg.BaseURL, row.ShortURL)
 		if err != nil {
@@ -220,19 +220,6 @@ func (r *DBRepository) BatchCreate(ctx context.Context,
 		return nil, defaultRepoErrWrapper(err)
 	}
 	return response, nil
-}
-
-func (r *DBRepository) BatchDelete(ctx context.Context, shortURL string) (string, error) {
-	var fullURL string
-	row := r.db.QueryRowContext(ctx, "SELECT url FROM shortener WHERE  shorten = $1", shortURL)
-	if err := row.Scan(&fullURL); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return "", errWithVal(ErrURLNotFound, shortURL)
-		}
-		r.logger.Error(defaultRepoError, zap.Error(err))
-		return "", defaultRepoErrWrapper(err)
-	}
-	return fullURL, nil
 }
 
 func (r *DBRepository) GetByShort(ctx context.Context, shortURL string) (string, error) {
@@ -299,8 +286,8 @@ func (r *DBRepository) GetListByUser(ctx context.Context, userID string) ([]mode
 	// обрабатываем ответ
 	for rows.Next() {
 		var row = models.GetURLResponse{}
-		if err := rows.StructScan(&row); err != nil {
-			return nil, defaultRepoErrWrapper(err)
+		if scanErr := rows.StructScan(&row); scanErr != nil {
+			return nil, defaultRepoErrWrapper(scanErr)
 		}
 		row.ShortURL, err = url.JoinPath(r.cfg.BaseURL, row.ShortURL)
 		if err != nil {
@@ -309,9 +296,9 @@ func (r *DBRepository) GetListByUser(ctx context.Context, userID string) ([]mode
 		}
 		response = append(response, row)
 	}
-	if err := rows.Err(); err != nil {
-		r.logger.Error("repository: ошибка при формировании ответа", zap.Error(err))
-		return nil, defaultRepoErrWrapper(err)
+	if rowsErr := rows.Err(); rowsErr != nil {
+		r.logger.Error("repository: ошибка при формировании ответа", zap.Error(rowsErr))
+		return nil, defaultRepoErrWrapper(rowsErr)
 	}
 	if response == nil {
 		return nil, sql.ErrNoRows

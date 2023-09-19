@@ -23,10 +23,10 @@ func TestHandler_userIdentity(t *testing.T) {
 	}
 
 	tests := []struct {
-		name              string
-		cookieVal         string
 		mockGenerateToken mockGenerateTokenBehavior
 		mockParseToken    mockParseTokenBehavior
+		name              string
+		cookieVal         string
 		want              want
 	}{
 		{
@@ -119,8 +119,8 @@ func TestHandler_userIdentity(t *testing.T) {
 func TestHandler_gzipReadWriterHandler(t *testing.T) {
 
 	type want struct {
-		statusCode      int
 		contentEncoding string
+		statusCode      int
 	}
 
 	tests := []struct {
