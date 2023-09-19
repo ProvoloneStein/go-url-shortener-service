@@ -1,9 +1,15 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -17,6 +23,7 @@ import (
 
 // filePerms - стандартные права файлового репозитория.
 const filePerms = 0600
+const shutdownTimeout = 30
 
 var buildVersion string
 var buildDate string
@@ -77,8 +84,26 @@ func main() {
 	}
 	services := services.NewService(logger, config, repos)
 	handler := handlers.NewHandler(logger, services)
+	srv := server.InitServer(config.Addr, handler.InitHandler())
 	logger.Info(fmt.Sprintf("запускается сервер по адресу %s", config.Addr))
-	if err = server.Run(config.EnableHTTPS, config.Addr, handler.InitHandler()); err != nil {
-		logger.Fatal("ошибка при запуске сервера", zap.Error(err))
+	go func() {
+		if err = server.Run(logger, config.EnableHTTPS, srv); err != nil {
+			if !errors.Is(err, http.ErrServerClosed) {
+				logger.Fatal("start server error", zap.Error(err))
+			}
+		}
+	}()
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+
+	sig := <-c
+	logger.Info(fmt.Sprintf("got signal %s", sig))
+	logger.Info("Shutting everything down gracefully")
+
+	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		logger.Fatal("Graceful shutdown failed", zap.Error(err))
 	}
+	logger.Info("Server shutdown successfully")
 }
