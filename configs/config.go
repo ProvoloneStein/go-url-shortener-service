@@ -2,8 +2,10 @@ package configs
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
+	"io/fs"
 	"os"
 	"reflect"
 
@@ -63,7 +65,10 @@ func InitConfig() (AppConfig, error) {
 	}
 	err = getFromFile(&config)
 	if err != nil {
-		return config, fmt.Errorf("ошибка при чтении файла конфигурации: %w", err)
+		var pathError *fs.PathError
+		if !errors.As(err, &pathError) {
+			return config, fmt.Errorf("ошибка при чтении файла конфигурации: %w", err)
+		}
 	}
 
 	return config, nil
