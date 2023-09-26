@@ -86,24 +86,32 @@ func main() {
 	handler := handlers.NewHandler(logger, services)
 	srv := server.InitServer(config.Addr, handler.InitHandler())
 	logger.Info(fmt.Sprintf("запускается сервер по адресу %s", config.Addr))
+
+	serverErr := make(chan error, 1)
+
 	go func() {
 		if err = server.Run(logger, config.EnableHTTPS, srv); err != nil {
-			if !errors.Is(err, http.ErrServerClosed) {
-				logger.Fatal("start server error", zap.Error(err))
-			}
+			serverErr <- err
 		}
 	}()
+
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
-	sig := <-c
-	logger.Info(fmt.Sprintf("got signal %s", sig))
-	logger.Info("Shutting everything down gracefully")
+	select {
+	case err := <-serverErr:
+		if !errors.Is(err, http.ErrServerClosed) {
+			logger.Fatal("start server error", zap.Error(err))
+		}
+	case sig := <-c:
+		logger.Info(fmt.Sprintf("got signal %s", sig))
+		logger.Info("Shutting everything down gracefully")
 
-	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout*time.Second)
-	defer cancel()
-	if err := srv.Shutdown(ctx); err != nil {
-		logger.Fatal("Graceful shutdown failed", zap.Error(err))
+		ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout*time.Second)
+		defer cancel()
+		if err := srv.Shutdown(ctx); err != nil {
+			logger.Fatal("Graceful shutdown failed", zap.Error(err))
+		}
 	}
 	logger.Info("Server shutdown successfully")
 }
