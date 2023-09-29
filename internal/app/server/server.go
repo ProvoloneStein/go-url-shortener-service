@@ -24,10 +24,11 @@ const (
 	maxHeaderBytes     = 1 << 20 // 1 MB
 	defaultFilePerm    = 0600
 	serialNumber       = 1234
+	defaultTLSPath     = "tls"
 )
 
 func initTLS(logger *zap.Logger, certName, keyName string) error {
-	certFile, err := os.OpenFile(certName, os.O_CREATE|os.O_RDWR, defaultFilePerm)
+	certFile, err := os.OpenFile(defaultTLSPath+"/"+certName, os.O_CREATE|os.O_RDWR, defaultFilePerm)
 	if err != nil {
 		return fmt.Errorf("ошибка открытия файла сертификата: %w", err)
 	}
@@ -37,7 +38,7 @@ func initTLS(logger *zap.Logger, certName, keyName string) error {
 		}
 	}()
 
-	keyFile, err := os.OpenFile(keyName, os.O_CREATE|os.O_RDWR, defaultFilePerm)
+	keyFile, err := os.OpenFile(defaultTLSPath+"/"+keyName, os.O_CREATE|os.O_RDWR, defaultFilePerm)
 	if err != nil {
 		return fmt.Errorf("ошибка открытия файла ключа: %w", err)
 	}
