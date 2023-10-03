@@ -45,8 +45,7 @@ func main() {
 	} else {
 		fmt.Println("Build commit: N/A")
 	}
-	config, err := configs.InitConfig()
-	var repos services.Repository
+	config, err := configs.New()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -54,6 +53,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	var repos services.Repository
 	switch {
 	case config.DatabaseDSN != "":
 		repos, err = repositories.NewDBRepository(logger, config)

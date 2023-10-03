@@ -22,6 +22,7 @@ type Repository interface {
 	GetByShort(ctx context.Context, shortURL string) (string, error)
 	GetListByUser(ctx context.Context, userID string) ([]models.GetURLResponse, error)
 	DeleteUserURLsBatch(ctx context.Context, userID string, data []string) error
+	Stats(ctx context.Context) (models.StatsData, error)
 	Ping() error
 	Close() error
 }
@@ -129,6 +130,14 @@ func (s *Service) DeleteUserURLsBatch(ctx context.Context, userID string, data [
 		return defaultServiceErrWrapper(err)
 	}
 	return nil
+}
+
+func (s *Service) Stats(ctx context.Context) (models.StatsData, error) {
+	data, err := s.repo.Stats(ctx)
+	if err != nil {
+		return data, defaultServiceErrWrapper(err)
+	}
+	return data, err
 }
 
 func (s *Service) Ping() error {

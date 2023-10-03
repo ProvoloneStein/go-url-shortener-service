@@ -139,3 +139,13 @@ func (r *LocalRepository) DeleteUserURLsBatch(ctx context.Context, userID string
 	}
 	return nil
 }
+
+func (r *LocalRepository) Stats(ctx context.Context) (models.StatsData, error) {
+	var data models.StatsData
+	select {
+	case <-ctx.Done():
+		return data, defaultRepoErrWrapper(ctx.Err())
+	default:
+	}
+	return data, nil
+}

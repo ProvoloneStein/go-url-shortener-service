@@ -220,3 +220,13 @@ func (r *FileRepository) DeleteUserURLsBatch(ctx context.Context, userID string,
 	}
 	return nil
 }
+
+func (r *FileRepository) Stats(ctx context.Context) (models.StatsData, error) {
+	var data models.StatsData
+	select {
+	case <-ctx.Done():
+		return data, defaultRepoErrWrapper(ctx.Err())
+	default:
+	}
+	return data, nil
+}
