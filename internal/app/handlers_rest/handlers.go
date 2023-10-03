@@ -1,14 +1,15 @@
-package handlers
+package handlersrest
 
 import (
 	"context"
 	"encoding/json"
+	"net"
+	"net/http"
+
 	"github.com/ProvoloneStein/go-url-shortener-service/configs"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"go.uber.org/zap"
-	"net"
-	"net/http"
 
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/logger"

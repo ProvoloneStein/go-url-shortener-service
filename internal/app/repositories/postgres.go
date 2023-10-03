@@ -314,7 +314,8 @@ func (r *DBRepository) Stats(ctx context.Context) (models.StatsData, error) {
 	default:
 	}
 	var users, urls int
-	query := "SELECT count(t1.user) as users, sum(t1.urls) as urls FROM (select user_id as user, count(shorten) as urls from shortener group by user) as t1"
+	query := `SELECT count(t1.user) as users, sum(t1.urls) as urls FROM 
+    	(select user_id as user, count(shorten) as urls from shortener group by user) as t1`
 	stats := r.db.QueryRowContext(ctx, query)
 	if err := stats.Scan(&users, &urls); err != nil {
 		if err == sql.ErrNoRows {

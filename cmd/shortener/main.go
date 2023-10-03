@@ -5,16 +5,22 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	handlersgrpc "github.com/ProvoloneStein/go-url-shortener-service/internal/app/handlers_grpc"
+	handlersrest "github.com/ProvoloneStein/go-url-shortener-service/internal/app/handlers_rest"
+	"github.com/ProvoloneStein/go-url-shortener-service/pkg/api/shorten"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
+
 	"go.uber.org/zap"
 
 	"github.com/ProvoloneStein/go-url-shortener-service/configs"
-	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/handlers"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/repositories"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/server"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/services"
@@ -83,7 +89,7 @@ func main() {
 		}
 	}
 	services := services.NewService(logger, config, repos)
-	handler := handlers.NewHandler(logger, services)
+	handler := handlersrest.NewHandler(logger, services)
 	srv := server.InitServer(config.Addr, handler.InitHandler())
 	logger.Info(fmt.Sprintf("запускается сервер по адресу %s", config.Addr))
 
@@ -91,6 +97,23 @@ func main() {
 
 	go func() {
 		if err = server.Run(logger, config.EnableHTTPS, srv); err != nil {
+			serverErr <- err
+		}
+	}()
+
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", config.GRPCPort))
+	if err != nil {
+		logger.Fatal("failed to listen:", zap.Error(err))
+	}
+	grpcServer := grpc.NewServer()
+	reflection.Register(grpcServer)
+
+	shorten.RegisterShortenServer(grpcServer, handlersgrpc.NewServer(logger, services))
+
+	logger.Info(fmt.Sprintf("запускается handlers_grpc сервер по порту %d", config.GRPCPort))
+
+	go func() {
+		if err = grpcServer.Serve(lis); err != nil {
 			serverErr <- err
 		}
 	}()

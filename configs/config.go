@@ -5,12 +5,13 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/caarlos0/env/v8"
 	"io/fs"
 	"log"
 	"net"
 	"os"
 	"reflect"
+
+	"github.com/caarlos0/env/v8"
 )
 
 type AppConfig struct {
@@ -21,8 +22,9 @@ type AppConfig struct {
 	SigningKey          string `env:"SIGNING_KEY" json:"signing_key"`
 	ConfigFileName      string `env:"CONFIG" json:"-"`
 	TrustedSubnetString string `env:"TRUSTED_SUBNET" json:"trusted_subnet"`
-	EnableHTTPS         bool   `env:"ENABLE_HTTPS" json:"enable_https"`
 	TrustedSubnet       *net.IPNet
+	GRPCPort            int  `env:"GRPC_PORT" json:"grpc_port"`
+	EnableHTTPS         bool `env:"ENABLE_HTTPS" json:"enable_https"`
 }
 
 const signingKey = "qrkjk#4#%35FSFJlja#4353KSFjH"
@@ -50,6 +52,8 @@ func getFromFile(cfg *AppConfig) error {
 	return nil
 }
 
+const defaultGRPCPort = 9090
+
 func New() (AppConfig, error) {
 	var config AppConfig
 
@@ -62,6 +66,7 @@ func New() (AppConfig, error) {
 	flag.StringVar(&config.ConfigFileName, "c", "configs/config.json", "config file name")
 	flag.StringVar(&config.TrustedSubnetString, "t", "", "trusted subnet")
 	flag.StringVar(&config.ConfigFileName, "config", "configs/config.json", "config file name")
+	flag.IntVar(&config.GRPCPort, "p", defaultGRPCPort, "handlers_grpc port")
 	flag.Parse()
 	err := env.Parse(&config)
 	if err != nil {
@@ -76,7 +81,7 @@ func New() (AppConfig, error) {
 	}
 	_, config.TrustedSubnet, err = net.ParseCIDR(config.TrustedSubnetString)
 	if err != nil {
-		log.Printf("ошибка парсинга CIDR %w", err)
+		log.Printf("ошибка парсинга CIDR %s", err.Error())
 		return config, nil
 	}
 

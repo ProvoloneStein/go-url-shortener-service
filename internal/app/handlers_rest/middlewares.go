@@ -1,4 +1,4 @@
-package handlers
+package handlersrest
 
 import (
 	"compress/gzip"

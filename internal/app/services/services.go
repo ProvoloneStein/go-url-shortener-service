@@ -137,7 +137,7 @@ func (s *Service) Stats(ctx context.Context) (models.StatsData, error) {
 	if err != nil {
 		return data, defaultServiceErrWrapper(err)
 	}
-	return data, err
+	return data, nil
 }
 
 func (s *Service) Ping() error {

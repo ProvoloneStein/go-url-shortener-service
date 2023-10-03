@@ -1,4 +1,4 @@
-package handlers
+package handlersrest
 
 import (
 	"bytes"
@@ -6,7 +6,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	mock_handlers "github.com/ProvoloneStein/go-url-shortener-service/internal/app/handlers/mocks"
+	mock_handlers "github.com/ProvoloneStein/go-url-shortener-service/internal/app/handlers_rest/mocks"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/models"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/repositories"
 	"github.com/golang/mock/gomock"
