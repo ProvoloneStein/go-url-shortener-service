@@ -89,7 +89,7 @@ func main() {
 		}
 	}
 	services := services.NewService(logger, config, repos)
-	handler := handlersrest.NewHandler(logger, services)
+	handler := handlersrest.NewHandler(logger, services, config)
 	srv := server.InitServer(config.Addr, handler.InitHandler())
 	logger.Info(fmt.Sprintf("запускается сервер по адресу %s", config.Addr))
 

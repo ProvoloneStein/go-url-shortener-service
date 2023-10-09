@@ -25,8 +25,8 @@ type CreateShortURLRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	UserId string `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	Url    string `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
+	UserId string `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // id пользователя
+	Url    string `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`                     // исходный url
 }
 
 func (x *CreateShortURLRequest) Reset() {
@@ -80,7 +80,7 @@ type CreateShortURLResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Result string `protobuf:"bytes,1,opt,name=result,proto3" json:"result,omitempty"`
+	Result string `protobuf:"bytes,1,opt,name=result,proto3" json:"result,omitempty"` // короткий url
 }
 
 func (x *CreateShortURLResponse) Reset() {
@@ -127,8 +127,8 @@ type BatchCreateShortURLRequestData struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	OriginalUrl   string `protobuf:"bytes,1,opt,name=original_url,json=originalUrl,proto3" json:"original_url,omitempty"`
-	CorrelationId string `protobuf:"bytes,2,opt,name=correlation_id,json=correlationId,proto3" json:"correlation_id,omitempty"`
+	OriginalUrl   string `protobuf:"bytes,1,opt,name=original_url,json=originalUrl,proto3" json:"original_url,omitempty"`       // исходный url
+	CorrelationId string `protobuf:"bytes,2,opt,name=correlation_id,json=correlationId,proto3" json:"correlation_id,omitempty"` // уникальный идентификатор
 }
 
 func (x *BatchCreateShortURLRequestData) Reset() {
@@ -183,7 +183,7 @@ type BatchCreateShortURLRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	Items  []*BatchCreateShortURLRequestData `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
-	UserId string                            `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserId string                            `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // id пользователя
 }
 
 func (x *BatchCreateShortURLRequest) Reset() {
@@ -237,8 +237,8 @@ type BatchCreateShortURLResponseData struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	ShortUrl      string `protobuf:"bytes,1,opt,name=short_url,json=shortUrl,proto3" json:"short_url,omitempty"`
-	CorrelationId string `protobuf:"bytes,2,opt,name=correlation_id,json=correlationId,proto3" json:"correlation_id,omitempty"`
+	ShortUrl      string `protobuf:"bytes,1,opt,name=short_url,json=shortUrl,proto3" json:"short_url,omitempty"`                // короткий url
+	CorrelationId string `protobuf:"bytes,2,opt,name=correlation_id,json=correlationId,proto3" json:"correlation_id,omitempty"` // уникальный идентификатор
 }
 
 func (x *BatchCreateShortURLResponseData) Reset() {
@@ -339,8 +339,8 @@ type GetByShortRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	UserId string `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	Url    string `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
+	UserId string `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // id пользователя
+	Url    string `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`                     // короткие url
 }
 
 func (x *GetByShortRequest) Reset() {
@@ -394,7 +394,7 @@ type GetByShortResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	FullUrl string `protobuf:"bytes,1,opt,name=full_url,json=fullUrl,proto3" json:"full_url,omitempty"`
+	FullUrl string `protobuf:"bytes,1,opt,name=full_url,json=fullUrl,proto3" json:"full_url,omitempty"` // исходный url
 }
 
 func (x *GetByShortResponse) Reset() {
@@ -441,7 +441,7 @@ type GetUserURLsRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	UserId string `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserId string `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // id пользователя
 }
 
 func (x *GetUserURLsRequest) Reset() {
@@ -488,8 +488,8 @@ type ShortenData struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	ShortUrl    string `protobuf:"bytes,1,opt,name=short_url,json=shortUrl,proto3" json:"short_url,omitempty"`
-	OriginalUrl string `protobuf:"bytes,2,opt,name=original_url,json=originalUrl,proto3" json:"original_url,omitempty"`
+	ShortUrl    string `protobuf:"bytes,1,opt,name=short_url,json=shortUrl,proto3" json:"short_url,omitempty"`          // короткий url
+	OriginalUrl string `protobuf:"bytes,2,opt,name=original_url,json=originalUrl,proto3" json:"original_url,omitempty"` // исходный url
 }
 
 func (x *ShortenData) Reset() {
@@ -590,8 +590,8 @@ type DeleteUserURLsBatchRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	UserId string   `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	Urls   []string `protobuf:"bytes,2,rep,name=urls,proto3" json:"urls,omitempty"`
+	UserId string   `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // id пользователя
+	Urls   []string `protobuf:"bytes,2,rep,name=urls,proto3" json:"urls,omitempty"`                   // короткие url
 }
 
 func (x *DeleteUserURLsBatchRequest) Reset() {

@@ -6,7 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"io/fs"
-	"log"
 	"net"
 	"os"
 	"reflect"
@@ -81,8 +80,7 @@ func New() (AppConfig, error) {
 	}
 	_, config.TrustedSubnet, err = net.ParseCIDR(config.TrustedSubnetString)
 	if err != nil {
-		log.Printf("ошибка парсинга CIDR %s", err.Error())
-		return config, nil
+		return config, fmt.Errorf("ошибка парсинга CIDR %w", err)
 	}
 
 	return config, nil
