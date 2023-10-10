@@ -135,9 +135,7 @@ func adminIPIdentity(cfg configs.AppConfig) func(http.Handler) http.Handler {
 			ipStr := r.Header.Get("X-Real-IP")
 			// парсим ip
 			ip := net.ParseIP(ipStr)
-			fmt.Println(ip)
-			fmt.Println(cfg.TrustedSubnet)
-			if !(cfg.TrustedSubnet != nil && ip != nil && cfg.TrustedSubnet.Contains(ip)) {
+			if cfg.TrustedSubnet == nil || ip == nil || !cfg.TrustedSubnet.Contains(ip) {
 				http.Error(w, "", http.StatusForbidden)
 				return
 			}
