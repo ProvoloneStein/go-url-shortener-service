@@ -305,3 +305,23 @@ func (r *DBRepository) GetListByUser(ctx context.Context, userID string) ([]mode
 	}
 	return response, nil
 }
+
+func (r *DBRepository) Stats(ctx context.Context) (models.StatsData, error) {
+	var res models.StatsData
+	select {
+	case <-ctx.Done():
+		return res, defaultRepoErrWrapper(ctx.Err())
+	default:
+	}
+	var users, urls int
+	query := `SELECT count(t1.user) as users, coalesce(sum(t1.urls), 0) as urls FROM 
+    	(select user_id as user, count(shorten) as urls from shortener group by user_id) as t1`
+	stats := r.db.QueryRowContext(ctx, query)
+	if err := stats.Scan(&users, &urls); err != nil {
+		if err == sql.ErrNoRows {
+			return res, nil
+		}
+		return res, defaultRepoErrWrapper(err)
+	}
+	return res, nil
+}

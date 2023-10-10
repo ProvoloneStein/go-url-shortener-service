@@ -1,4 +1,4 @@
-package handlers
+package handlersrest
 
 import (
 	"errors"

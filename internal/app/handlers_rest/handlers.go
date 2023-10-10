@@ -1,9 +1,11 @@
-package handlers
+package handlersrest
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 
+	"github.com/ProvoloneStein/go-url-shortener-service/configs"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"go.uber.org/zap"
@@ -32,15 +34,18 @@ type Service interface {
 	ParseToken(accessToken string) (string, error)
 	// Ping - проверить доступность сервиса.
 	Ping() error
+	// Stats - статистика сервиса.
+	Stats(ctx context.Context) (models.StatsData, error)
 }
 
 type Handler struct {
 	logger   *zap.Logger
 	services Service
+	cfg      configs.AppConfig
 }
 
-func NewHandler(logger *zap.Logger, services Service) *Handler {
-	return &Handler{logger: logger, services: services}
+func NewHandler(logger *zap.Logger, services Service, cfg configs.AppConfig) *Handler {
+	return &Handler{logger: logger, services: services, cfg: cfg}
 }
 
 func (h *Handler) InitHandler() *chi.Mux {
@@ -53,8 +58,11 @@ func (h *Handler) InitHandler() *chi.Mux {
 
 	router.Post("/", h.CreateShortURL)
 	router.Get("/{id}", h.GetByShort)
-
 	router.Route("/api", func(r chi.Router) {
+		r.Route("/internal", func(r chi.Router) {
+			r.Use(adminIPIdentity(h.cfg))
+			r.Post("/stats", h.stats)
+		})
 		r.Route("/shorten", func(r chi.Router) {
 			r.Post("/", h.CreateShortURLByJSON)
 			r.Post("/batch", h.BatchCreateURLByJSON)
@@ -66,6 +74,28 @@ func (h *Handler) InitHandler() *chi.Mux {
 	})
 
 	return router
+}
+
+func (h *Handler) stats(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	res, err := h.services.Stats(ctx)
+	if err != nil {
+		h.logger.Error(defaultServiceError, zap.Error(err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	b, err := json.Marshal(res)
+	if err != nil {
+		h.logger.Error("ошибка при сериализации url", zap.Error(err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set(contentTypeHeader, contentTypeJSON)
+	w.WriteHeader(http.StatusOK)
+	if _, err = w.Write(b); err != nil {
+		h.logger.Error("ошибка при создании url", zap.Error(err))
+		return
+	}
 }
 
 func (h *Handler) pingDB(w http.ResponseWriter, r *http.Request) {

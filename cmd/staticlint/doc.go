@@ -234,7 +234,7 @@ A hard-to-spot variant of this form is common in parallel tests:
             }
         }
 
-The t.Parallel() call causes the rest of the function to execute
+The t.Parallel() call causes the handlers_rest of the function to execute
 concurrent with the loop.
 
 The analyzer reports references only in the last statement,

@@ -1,10 +1,10 @@
-package handlers
+package handlersrest
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	mock_handlers "github.com/ProvoloneStein/go-url-shortener-service/internal/app/handlers/mocks"
+	mock_handlers "github.com/ProvoloneStein/go-url-shortener-service/internal/app/handlers_rest/mocks"
 	"github.com/ProvoloneStein/go-url-shortener-service/internal/app/repositories"
 	"github.com/go-chi/chi/v5"
 	"github.com/golang/mock/gomock"

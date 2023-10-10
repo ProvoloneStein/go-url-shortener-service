@@ -1,4 +1,4 @@
-package handlers
+package handlersrest
 
 import (
 	"compress/gzip"
@@ -6,8 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"strings"
+
+	"github.com/ProvoloneStein/go-url-shortener-service/configs"
 
 	"go.uber.org/zap"
 )
@@ -122,6 +125,21 @@ func userIdentity(services Service, logger *zap.Logger) func(http.Handler) http.
 			}
 			ctxUser := context.WithValue(r.Context(), userCtx, userID)
 			next.ServeHTTP(w, r.WithContext(ctxUser))
+		})
+	}
+}
+
+func adminIPIdentity(cfg configs.AppConfig) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ipStr := r.Header.Get("X-Real-IP")
+			// парсим ip
+			ip := net.ParseIP(ipStr)
+			if cfg.TrustedSubnet == nil || ip == nil || !cfg.TrustedSubnet.Contains(ip) {
+				http.Error(w, "", http.StatusForbidden)
+				return
+			}
+			next.ServeHTTP(w, r)
 		})
 	}
 }

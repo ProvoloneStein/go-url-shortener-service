@@ -5,6 +5,11 @@ type BatchCreateRequest struct {
 	UUID string `json:"correlation_id"`
 }
 
+type StatsData struct {
+	URLs  int `json:"urls"`
+	Users int `json:"users"`
+}
+
 type BatchCreateData struct {
 	URL      string `json:"-" db:"url"`
 	ShortURL string `json:"short_url" db:"shorten"`

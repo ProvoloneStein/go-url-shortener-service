@@ -1,9 +1,9 @@
-package handlers
+package handlersrest
 
 import (
 	"context"
 	"errors"
-	mock_handlers "github.com/ProvoloneStein/go-url-shortener-service/internal/app/handlers/mocks"
+	mock_handlers "github.com/ProvoloneStein/go-url-shortener-service/internal/app/handlers_rest/mocks"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
